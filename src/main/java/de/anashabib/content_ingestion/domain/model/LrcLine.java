@@ -4,4 +4,5 @@ public record LrcLine(int startMs, Integer endMs, String text, boolean instrumen
     public LrcLine(int startMs, String text) {
         this(startMs, null, text, text == null || text.isBlank());
     }
+
 }

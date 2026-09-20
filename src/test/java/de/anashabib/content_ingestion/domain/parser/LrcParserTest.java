@@ -41,4 +41,19 @@ class LrcParserTest {
                 .isEqualTo(expectedMs);
     }
 
+    @Test
+    void capturesMetadataTags() {
+        String lrc = "[ti:Das Model]\n[ar:Kraftwerk]\n[00:15.26]Sie ist ein Model";
+
+        ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
+
+        // Assert the metadata was captured
+        assertThat(result.metadata())
+                .containsEntry("ti", "Das Model")
+                .containsEntry("ar", "Kraftwerk");
+
+        // Assert the metadata lines were not accidentally added as lyric lines
+        assertThat(result.lines()).hasSize(1);
+    }
+
 }
