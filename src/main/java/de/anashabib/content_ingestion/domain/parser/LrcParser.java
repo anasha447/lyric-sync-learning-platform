@@ -3,6 +3,7 @@ package de.anashabib.content_ingestion.domain.parser;
 import de.anashabib.content_ingestion.domain.model.LrcLine;
 import de.anashabib.content_ingestion.domain.model.ParsedLrc;
 
+import java.util.Comparator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,10 +25,24 @@ public class LrcParser {
         Map<String, String> metadata = new HashMap<>();
 
         for (String rawLine : raw.split("\\R")) {
-            Matcher m = TIMESTAMP.matcher(rawLine);
-            if (m.find()) {
-                String text = rawLine.substring(m.end()).trim();
-                lines.add(new LrcLine(toMillis(m), text));
+            Matcher timeMatcher = TIMESTAMP.matcher(rawLine);
+
+            // 1. Temporary list to hold all timestamps found on this single line
+            List<Integer> lineTimestamps = new ArrayList<>();
+            int textStartIndex = 0;
+
+            // 2. The Fix: A while loop to scoop up EVERY timestamp before the text
+            while (timeMatcher.find()) {
+                lineTimestamps.add(toMillis(timeMatcher));
+                textStartIndex = timeMatcher.end(); // Move the text start index forward
+            }
+
+            // 3. If we found timestamps, create a separate LrcLine for each one
+            if (!lineTimestamps.isEmpty()) {
+                String text = rawLine.substring(textStartIndex).trim();
+                for (int startMs : lineTimestamps) {
+                    lines.add(new LrcLine(startMs, text));
+                }
                 continue;
             }
 
@@ -38,7 +53,15 @@ public class LrcParser {
                 metadata.put(key, value);
             }
         }
-        return new ParsedLrc(metadata, lines);
+
+        int offsetMs = parseOffset(metadata.get("offset"));
+
+        List<LrcLine> shiftedLines = lines.stream()
+                .map(line -> line.shiftedBy(offsetMs))
+                .sorted(Comparator.comparingInt(LrcLine::startMs)) // <-- ADD THIS LINE
+                .toList();
+
+        return new ParsedLrc(metadata, shiftedLines);
     }
 
     private int toMillis(Matcher m) {
@@ -52,5 +75,9 @@ public class LrcParser {
                 : Integer.parseInt(frac);
 
         return (minutes * 60 + seconds) * 1000 + fractionMs;
+    }
+
+    private int parseOffset(String raw) {
+        return (raw == null || raw.isBlank()) ? 0 : Integer.parseInt(raw.trim());
     }
 }

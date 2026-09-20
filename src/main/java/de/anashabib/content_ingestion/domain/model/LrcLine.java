@@ -4,5 +4,12 @@ public record LrcLine(int startMs, Integer endMs, String text, boolean instrumen
     public LrcLine(int startMs, String text) {
         this(startMs, null, text, text == null || text.isBlank());
     }
-
+    public LrcLine shiftedBy(int offsetMs) {
+        return new LrcLine(
+                Math.max(0, startMs + offsetMs), // clamp to 0 so time is never negative
+                endMs == null ? null : Math.max(0, endMs + offsetMs),
+                text,
+                instrumental
+        );
+    }
 }
