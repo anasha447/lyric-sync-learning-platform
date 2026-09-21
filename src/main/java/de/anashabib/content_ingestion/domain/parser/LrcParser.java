@@ -61,8 +61,20 @@ public class LrcParser {
                 .sorted(Comparator.comparingInt(LrcLine::startMs)) // <-- ADD THIS LINE
                 .toList();
 
-        return new ParsedLrc(metadata, shiftedLines);
-    }
+        List<LrcLine> finalLines = new ArrayList<>();
+        for (int i = 0; i < shiftedLines.size(); i++) {
+            LrcLine current = shiftedLines.get(i);
+
+            // If there is a next line, use its start time. Otherwise, use track duration.
+            int endMs = (i + 1 < shiftedLines.size())
+                    ? shiftedLines.get(i + 1).startMs()
+                    : (int) trackDuration.toMillis();
+
+            finalLines.add(current.withEndMs(endMs));
+        }
+
+        return new ParsedLrc(metadata, finalLines);
+        }
 
     private int toMillis(Matcher m) {
         int minutes  = Integer.parseInt(m.group(1));

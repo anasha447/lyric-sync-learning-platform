@@ -12,4 +12,7 @@ public record LrcLine(int startMs, Integer endMs, String text, boolean instrumen
                 instrumental
         );
     }
+    public LrcLine withEndMs(int newEndMs) {
+        return new LrcLine(startMs, newEndMs, text, instrumental);
+    }
 }

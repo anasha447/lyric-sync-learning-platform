@@ -92,4 +92,20 @@ class LrcParserTest {
         ParsedLrc result = parser.parse("[01:20.00]", Duration.ofMinutes(5));
         assertThat(result.lines().getFirst().instrumental()).isTrue();
     }
+    @Test
+    void derivesEndMsFromNextLinesStart() {
+        String lrc = "[00:10.00]First\n[00:20.00]Second";
+        ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
+
+        // The first line should end exactly when the second line begins (20,000 ms)
+        assertThat(result.lines().get(0).endMs()).isEqualTo(20_000);
+    }
+
+    @Test
+    void derivesLastLinesEndMsFromTrackDuration() {
+        ParsedLrc result = parser.parse("[00:10.00]Only line", Duration.ofSeconds(200));
+
+        // The last line should end when the track ends (200,000 ms)
+        assertThat(result.lines().getFirst().endMs()).isEqualTo(200_000);
+    }
 }
