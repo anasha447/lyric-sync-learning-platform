@@ -1,5 +1,25 @@
 # Development Log
 
+
+
+## 2026-09-22 — BE-1.2: Encoding Normalization (Latin-1 to UTF-8)
+
+**Built:**
+- `LrcTextDecoder` to transcode raw byte arrays into clean `UTF-8` Strings.
+- `DetectedEncoding` and `DecodedText` models to preserve encoding context.
+- Domain-specific `UndecodableTextException` for completely unreadable files.
+
+**Decided:**
+- Detection strictly attempts `UTF-8` first. Because `UTF-8` multi-byte sequences follow strict mathematical rules, wrong guesses reliably crash (`CharacterCodingException`). If it crashes, it safely falls back to `Windows-1252` (a superset of Latin-1).
+- Left BOM stripping to `LrcParser` to avoid duplicating the same logic across two layers.
+
+**Broke / learned:**
+- _(none)_
+
+**Branch:** `feature/BE-1.2-lrc-encoding`
+**Commits:** `hash` feat(encoding): detect and transcode UTF-8/Windows-1252 and reject undecodable input
+
+
 ## 2026-09-21 — BE-1.1: LrcParser completed
 
 - `[offset:±ms]` applied to every timestamp, clamped at zero
