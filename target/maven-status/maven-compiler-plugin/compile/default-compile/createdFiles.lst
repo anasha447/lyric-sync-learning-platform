@@ -1,4 +1,10 @@
-de\anashabib\content_ingestion\domain\model\LrcLine.class
-de\anashabib\content_ingestion\ContentIngestionApplication.class
-de\anashabib\content_ingestion\domain\model\ParsedLrc.class
+de\anashabib\content_ingestion\domain\encoding\LrcTextDecoder.class
+de\anashabib\content_ingestion\domain\encoding\DetectedEncoding.class
 de\anashabib\content_ingestion\domain\parser\LrcParser.class
+de\anashabib\content_ingestion\domain\model\LrcLine.class
+de\anashabib\content_ingestion\domain\validation\ValidationError.class
+de\anashabib\content_ingestion\domain\encoding\UndecodableTextException.class
+de\anashabib\content_ingestion\domain\validation\LrcValidator.class
+de\anashabib\content_ingestion\ContentIngestionApplication.class
+de\anashabib\content_ingestion\domain\encoding\DecodedText.class
+de\anashabib\content_ingestion\domain\model\ParsedLrc.class
