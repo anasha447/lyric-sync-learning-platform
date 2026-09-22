@@ -1,2 +1,4 @@
+de\anashabib\content_ingestion\domain\validation\LrcValidatorTest.class
 de\anashabib\content_ingestion\domain\parser\LrcParserTest.class
 de\anashabib\content_ingestion\ContentIngestionApplicationTests.class
+de\anashabib\content_ingestion\domain\encoding\LrcTextDecoderTest.class
