@@ -1,12 +1,10 @@
 spring:
   application:
     name: content-ingestion
-datasource:
-  url: jdbc:postgresql://localhost:5432/content_ingestion
-  username: content_ingestion
-  password: local_dev_only
+  datasource:
+    url: jdbc:postgresql://localhost:5432/content_ingestion
+    username: content_ingestion
+    password: local_dev_only
   jpa:
     hibernate:
       ddl-auto: validate
-  flyway:
-    enabled: false

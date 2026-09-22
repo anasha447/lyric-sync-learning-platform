@@ -1,14 +1,10 @@
 spring:
   application:
     name: content-ingestion
-datasource:
-  url: jdbc:h2:mem:contentdb
-  driverClassName: org.h2.Driver
-  username: sa
-  password:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/content_ingestion
+    username: content_ingestion
+    password: local_dev_only
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
-  flyway:
-    enabled: false
+      ddl-auto: validate

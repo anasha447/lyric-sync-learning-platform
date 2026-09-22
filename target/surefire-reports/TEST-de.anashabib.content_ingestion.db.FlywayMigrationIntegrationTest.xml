@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.047" tests="7" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="de.anashabib.content_ingestion.db.FlywayMigrationIntegrationTest" time="0.606" tests="1" errors="1" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -67,11 +67,72 @@
     <property name="java.class.version" value="65.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[content-ingestion] "/>
   </properties>
-  <testcase name="flagsTiedOrNonIncreasingTimestamps" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.007"/>
-  <testcase name="flagsImplausiblyDenseLineCount" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.011"/>
-  <testcase name="validFileProducesNoErrors" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.001"/>
-  <testcase name="flagsStartTimeExceedingTrackDuration" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.003"/>
-  <testcase name="flagsEmptyLineList" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.003"/>
-  <testcase name="doesNotFlagSparseLyricsAsInvalid" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.003"/>
-  <testcase name="flagsNegativeStartTime" classname="de.anashabib.content_ingestion.domain.validation.LrcValidatorTest" time="0.007"/>
+  <testcase name="" classname="de.anashabib.content_ingestion.db.FlywayMigrationIntegrationTest" time="0.606">
+    <error message="Could not find a valid Docker environment. Please see logs and check configuration" type="java.lang.IllegalStateException"><![CDATA[java.lang.IllegalStateException: Could not find a valid Docker environment. Please see logs and check configuration
+	at org.testcontainers.dockerclient.DockerClientProviderStrategy.lambda$getFirstValidStrategy$7(DockerClientProviderStrategy.java:274)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at org.testcontainers.dockerclient.DockerClientProviderStrategy.getFirstValidStrategy(DockerClientProviderStrategy.java:265)
+	at org.testcontainers.DockerClientFactory.getOrInitializeStrategy(DockerClientFactory.java:154)
+	at org.testcontainers.DockerClientFactory.client(DockerClientFactory.java:196)
+	at org.testcontainers.DockerClientFactory$1.getDockerClient(DockerClientFactory.java:108)
+	at com.github.dockerjava.api.DockerClientDelegate.authConfig(DockerClientDelegate.java:111)
+	at org.testcontainers.containers.GenericContainer.start(GenericContainer.java:316)
+	at org.testcontainers.junit.jupiter.TestcontainersExtension$StoreAdapter.start(TestcontainersExtension.java:276)
+	at org.testcontainers.junit.jupiter.TestcontainersExtension$StoreAdapter.access$200(TestcontainersExtension.java:263)
+	at org.testcontainers.junit.jupiter.TestcontainersExtension.lambda$startContainers$4(TestcontainersExtension.java:83)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.testcontainers.junit.jupiter.TestcontainersExtension.lambda$startContainers$5(TestcontainersExtension.java:83)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.testcontainers.junit.jupiter.TestcontainersExtension.startContainers(TestcontainersExtension.java:83)
+	at org.testcontainers.junit.jupiter.TestcontainersExtension.beforeAll(TestcontainersExtension.java:57)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	Suppressed: org.testcontainers.containers.ContainerFetchException: Can't get Docker image: RemoteDockerImage(imageName=postgres:16-alpine, imagePullPolicy=DefaultPullPolicy(), imageNameSubstitutor=org.testcontainers.utility.ImageNameSubstitutor$LogWrappedImageNameSubstitutor@46a388cc)
+		at org.testcontainers.containers.GenericContainer.getDockerImageName(GenericContainer.java:1308)
+		at org.springframework.boot.testcontainers.service.connection.ServiceConnectionContextCustomizerFactory.createSource(ServiceConnectionContextCustomizerFactory.java:90)
+		at org.springframework.boot.testcontainers.service.connection.ServiceConnectionContextCustomizerFactory.lambda$collectSources$1(ServiceConnectionContextCustomizerFactory.java:65)
+		at org.springframework.core.annotation.TypeMappedAnnotations$AggregatesSpliterator.tryAdvance(TypeMappedAnnotations.java:591)
+		at org.springframework.core.annotation.TypeMappedAnnotations$AggregatesSpliterator.tryAdvance(TypeMappedAnnotations.java:558)
+		at java.base/java.util.Spliterator.forEachRemaining(Spliterator.java:332)
+		at java.base/java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:762)
+		at org.springframework.boot.testcontainers.service.connection.ServiceConnectionContextCustomizerFactory.lambda$collectSources$0(ServiceConnectionContextCustomizerFactory.java:65)
+		at org.springframework.util.ReflectionUtils.doWithLocalFields(ReflectionUtils.java:691)
+		at org.springframework.boot.testcontainers.service.connection.ServiceConnectionContextCustomizerFactory.collectSources(ServiceConnectionContextCustomizerFactory.java:62)
+		at org.springframework.boot.testcontainers.service.connection.ServiceConnectionContextCustomizerFactory.createContextCustomizer(ServiceConnectionContextCustomizerFactory.java:54)
+		at org.springframework.test.context.support.AbstractTestContextBootstrapper.getContextCustomizers(AbstractTestContextBootstrapper.java:420)
+		at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:393)
+		at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+		at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:226)
+		at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:117)
+		at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:102)
+		at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+		at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+		at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:466)
+		at org.springframework.test.context.junit.jupiter.SpringExtension.afterAll(SpringExtension.java:220)
+		... 1 more
+	Caused by: java.lang.IllegalStateException: Previous attempts to find a Docker environment failed. Will not retry. Please see logs and check configuration
+		at org.testcontainers.dockerclient.DockerClientProviderStrategy.getFirstValidStrategy(DockerClientProviderStrategy.java:229)
+		at org.testcontainers.DockerClientFactory.getOrInitializeStrategy(DockerClientFactory.java:154)
+		at org.testcontainers.DockerClientFactory.client(DockerClientFactory.java:196)
+		at org.testcontainers.images.LocalImagesCache.get(LocalImagesCache.java:31)
+		at org.testcontainers.images.AbstractImagePullPolicy.shouldPull(AbstractImagePullPolicy.java:18)
+		at org.testcontainers.images.RemoteDockerImage.resolve(RemoteDockerImage.java:79)
+		at org.testcontainers.images.RemoteDockerImage.resolve(RemoteDockerImage.java:35)
+		at org.testcontainers.utility.LazyFuture.getResolvedValue(LazyFuture.java:20)
+		at org.testcontainers.utility.LazyFuture.get(LazyFuture.java:41)
+		at org.testcontainers.containers.GenericContainer.getDockerImageName(GenericContainer.java:1306)
+		... 22 more
+]]></error>
+    <system-out><![CDATA[2026-09-23T00:07:45.185+03:00  INFO 22740 --- [content-ingestion] [           main] org.testcontainers.images.PullPolicy     : Image pull policy will be performed by: DefaultPullPolicy()
+2026-09-23T00:07:45.188+03:00  INFO 22740 --- [content-ingestion] [           main] o.t.utility.ImageNameSubstitutor         : Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+2026-09-23T00:07:45.210+03:00  INFO 22740 --- [content-ingestion] [           main] org.testcontainers.DockerClientFactory   : Testcontainers version: 2.0.5
+2026-09-23T00:07:45.585+03:00  INFO 22740 --- [content-ingestion] [           main] o.t.d.DockerClientProviderStrategy       : Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+2026-09-23T00:07:45.614+03:00  INFO 22740 --- [content-ingestion] [           main] .t.d.DockerMachineClientProviderStrategy : docker-machine executable was not found on PATH ([C:\Program Files\Common Files\Oracle\Java\javapath, C:\Python313\Scripts\, C:\Python313\, C:\Windows\system32, C:\Windows, C:\Windows\System32\Wbem, C:\Windows\System32\WindowsPowerShell\v1.0\, C:\Windows\System32\OpenSSH\, C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common, C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR, C:\WINDOWS\system32, C:\WINDOWS, C:\WINDOWS\System32\Wbem, C:\WINDOWS\System32\WindowsPowerShell\v1.0\, C:\WINDOWS\System32\OpenSSH\, C:\Program Files\Git\cmd, C:\Program Files\nodejs\, C:\ProgramData\chocolatey\bin, C:\Program Files\GitHub CLI\, C:\Program Files\apache-maven-3.9.11-bin\apache-maven-3.9.11\bin, C:\Program Files\Java\jdk-25\bin, C:\Users\anas2\k8s, , C:\Program Files\Docker\Docker\resources\bin, C:\Program Files\MySQL\MySQL Shell 8.0\bin\, C:\Users\anas2\AppData\Local\Microsoft\WindowsApps, C:\Users\anas2\AppData\Local\Programs\Microsoft VS Code\bin, C:\Users\anas2\AppData\Roaming\npm, C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\bin, C:\Users\anas2\AppData\Local\JetBrains\Toolbox\scripts, C:\Users\anas2\AppData\Local\Programs\Ollama, C:\Users\anas2\AppData\Local\Programs\Antigravity\bin, C:\Users\anas2\.local\bin, C:\Users\anas2\AppData\Local\Kingsoft\WPS Office\12.1.0.27458\clitool])
+2026-09-23T00:07:45.615+03:00 ERROR 22740 --- [content-ingestion] [           main] o.t.d.DockerClientProviderStrategy       : Could not find a valid Docker environment. Please check configuration. Attempted configurations were:
+As no valid configuration was found, execution cannot continue.
+See https://java.testcontainers.org/on_failure.html for more details.
+2026-09-23T00:07:45.624+03:00  INFO 22740 --- [content-ingestion] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [de.anashabib.content_ingestion.db.FlywayMigrationIntegrationTest]: FlywayMigrationIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-23T00:07:45.643+03:00  INFO 22740 --- [content-ingestion] [           main] org.testcontainers.DockerClientFactory   : Testcontainers version: 2.0.5
+]]></system-out>
+  </testcase>
 </testsuite>
