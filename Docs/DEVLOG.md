@@ -1,5 +1,22 @@
 # Development Log
 
+
+## 2026-09-24 — BE-1.5: Song Aggregate Persistence Adapters
+
+**Built:**
+- JPA Entities (`SongEntity`, `SongLineEntity`, `ArtistEntity`) utilizing `CascadeType.ALL` and orphan removal for complete lifecycle management of song lines.
+- Custom JPA attribute converters (`LicenseTypeConverter`, `SyncGranularityConverter`) to map domain enums to PostgreSQL string columns.
+- Hexagonal Architecture out-ports (`SongPersistenceAdapter`, `ArtistPersistenceAdapter`) and mapping layers to strictly isolate the core domain from the database infrastructure.
+- Comprehensive integration test suites (`SongPersistenceAdapterTest`, `ArtistPersistenceAdapterTest`) utilizing `@DataJpaTest` and Testcontainers.
+
+**Decided:**
+- Completely disable Hibernate's auto-schema generation in tests (`spring.jpa.hibernate.ddl-auto=none`) to ensure tests strictly validate against the actual Flyway database schema.
+- Maintain strict separation between database entities and core domain models, utilizing mappers to prevent JPA annotations from leaking into the domain layer.
+
+**Broke / learned:**
+- Hibernate's write-behind optimization delays `INSERT` statements for entities with pre-assigned UUIDs. Combined with the automatic transaction rollback of `@DataJpaTest`, this causes database-level constraint violations to fail silently. You must forcefully trigger `jpaRepository.flush()` in tests to actually execute the SQL and catch `DataIntegrityViolationException`s.
+
+**Branch:** `feature/BE-1.5-persistence-adapter`
 ## 2026-09-23 — BE-1.4: Database Infrastructure and Baseline Schema
 
 **Built:**
@@ -15,7 +32,6 @@
 - Testcontainers 2.0 introduced major breaking changes, requiring the `testcontainers-` prefix in Maven artifact IDs and removing generic types (`<?>`) from `@Container` declarations.
 
 **Branch:** `feature/BE-1.4-catalog-schema`
-**Commits:** `<0df2895, b80cc0b, cf4e710,4168342,4bb3e49>` feat(db): add baseline catalog schema and testcontainers integration
 
 ---
 
@@ -32,7 +48,6 @@
 - *(none)*
 
 **Branch:** `feature/BE-1.3-lrc-validation`
-**Commits:** `7f8e455`
 
 ---
 
@@ -51,7 +66,6 @@
 - _(none)_
 
 **Branch:** `feature/BE-1.2-lrc-encoding`
-**Commits:** `hash` feat(encoding): detect and transcode UTF-8/Windows-1252 and reject undecodable input
 
 ---
 
@@ -66,7 +80,6 @@
 - BOM / CRLF / trailing whitespace handled
 
 **Branch:** `feature/BE-1.1-lrc-parser`
-**Commits:** <add your commit hash(es) here>
 
 ---
 
@@ -77,4 +90,3 @@
 - Metadata tags (`[ti:]`, `[ar:]`, `[length:]`) captured into a map instead of being read as lyric lines
 
 **Branch:** `feature/BE-1.1-lrc-parser`
-**Commits:** `0a78a92`, `13e67c3`, `8308934`
