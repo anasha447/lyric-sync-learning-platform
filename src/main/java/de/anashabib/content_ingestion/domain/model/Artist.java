@@ -1,4 +1,5 @@
 package de.anashabib.content_ingestion.domain.model;
 
-public enum Artist {
-}
+import java.util.UUID;
+
+public record Artist(UUID id, String name) {}
