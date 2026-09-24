@@ -1,4 +1,11 @@
 # =========================
+# Java / Maven
+# =========================
+target/
+*.jar
+*.war
+
+# =========================
 # Secrets & Environment (CRITICAL)
 # =========================
 .env
@@ -29,4 +36,4 @@ __pycache__/
 *$py.class
 venv/
 env/
-.pytest_cache/git add .gitignore
+.pytest_cache/
