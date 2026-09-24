@@ -1,5 +1,9 @@
-de\anashabib\content_ingestion\domain\validation\LrcValidatorTest.class
+de\anashabib\content_ingestion\adapter\out\persistence\mapper\ArtistMapperTest.class
+de\anashabib\content_ingestion\adapter\out\persistence\mapper\SongMapperTest.class
+de\anashabib\content_ingestion\adapter\out\persistence\ArtistPersistenceAdapterTest.class
 de\anashabib\content_ingestion\domain\parser\LrcParserTest.class
 de\anashabib\content_ingestion\ContentIngestionApplicationTests.class
 de\anashabib\content_ingestion\db\FlywayMigrationIntegrationTest.class
 de\anashabib\content_ingestion\domain\encoding\LrcTextDecoderTest.class
+de\anashabib\content_ingestion\adapter\out\persistence\SongPersistenceAdapterTest.class
+de\anashabib\content_ingestion\domain\validation\LrcValidatorTest.class
