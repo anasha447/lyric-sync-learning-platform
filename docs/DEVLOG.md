@@ -7,6 +7,7 @@
 - Layered, non-root Dockerfile (moved here from OPS-2.4)
 - Actions pinned by commit SHA (trivy-action tags were hijacked earlier this year); Dependabot keeps them current
 - Broke / learned: the `/mvnw text eol=lf` rule was anchored to the old repo root, so after the move `mvnw` came out with CRLF and without the executable bit
+- The image gate's first run blocked 4 CRITICAL CVEs in `tomcat-embed-core` 11.0.24; Spring Boot 4.1.1 → 4.1.2 brings Tomcat 11.0.27
 
 **Branch:** `chore/OPS-2.3-ci`
 
