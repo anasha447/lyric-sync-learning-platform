@@ -3,7 +3,7 @@
 ## 2026-11-21 — OPS-2.3: CI with GitHub Actions
 
 - PRs run `./mvnw verify` with Testcontainers on Temurin 21; a "CI result" gate job always reports, so branch protection can require it without blocking docs-only PRs
-- On `main`: image build → Trivy gate on fixable CRITICALs → SARIF to the Security tab → push to GHCR (`sha-<short>`, `main`)
+- Every backend PR builds the image and runs a Trivy gate on fixable CRITICALs; on `main` the report goes to the Security tab and the image is pushed to GHCR (`sha-<short>`, `main`)
 - Layered, non-root Dockerfile (moved here from OPS-2.4)
 - Actions pinned by commit SHA (trivy-action tags were hijacked earlier this year); Dependabot keeps them current
 - Broke / learned: the `/mvnw text eol=lf` rule was anchored to the old repo root, so after the move `mvnw` came out with CRLF and without the executable bit
