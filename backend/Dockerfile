@@ -15,7 +15,10 @@ RUN ./mvnw -B -q package -DskipTests \
 
 # ---- runtime: JRE only, non-root ----
 FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S app -G app
+# /data/audio is where the local storage adapter keeps uploads; a named volume mounted
+# there inherits this ownership, so the non-root user can write to it
+RUN addgroup -S app && adduser -S app -G app \
+ && mkdir -p /data/audio && chown -R app:app /data
 USER app
 WORKDIR /app
 
