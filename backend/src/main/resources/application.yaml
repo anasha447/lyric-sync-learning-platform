@@ -1,6 +1,6 @@
 spring:
   application:
-    name: content-ingestion
+    name: lyricsync-backend
   datasource:
     url: jdbc:postgresql://localhost:5432/content_ingestion
     username: content_ingestion
