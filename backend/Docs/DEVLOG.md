@@ -1,5 +1,17 @@
 # Development Log
 
+## 2026-11-21 — OPS-2.1: Monorepo layout and Spring Modulith backend
+
+- Repo root is now the whole project; the service lives in `backend/`, history kept (`git log --follow` works)
+- Package `de.anashabib.content_ingestion` → `de.anashabib.lyricsync`, existing code is the `catalog` module
+- Spring Modulith 2.1.3 added (matches Boot 4.1); artifact renamed `lyricsync-backend`; staying on Java 21
+- Dropped the unused Spring Data JDBC starter (it was trying to claim the JPA repositories)
+- Tests run inside `maven:3.9-eclipse-temurin-21`: the antivirus on the dev PC breaks host Java → Docker connections
+
+**Branch:** `chore/OPS-2.1-monorepo`
+
+---
+
 ## 2026-11-21 — BE-1.6: Admin song ingestion endpoint
 
 - `IngestSongUseCase` chains decode → parse → validate, then stores audio, finds or creates the artist, saves the song
