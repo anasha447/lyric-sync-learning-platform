@@ -46,15 +46,31 @@ More detail:
 
 ## Running locally
 
-Requirements: Docker and JDK 21.
+Requirements: Docker, and JDK 21 if you want to run the backend outside a container.
+
+**Whole stack in containers**
+
+```bash
+cp .env.example .env                        # optional: change passwords or ports
+docker compose --profile app up -d --build  # Postgres, RabbitMQ, Traefik, backend
+```
+
+| URL | What |
+|---|---|
+| http://localhost/swagger-ui.html | API docs (Swagger UI), through Traefik |
+| http://localhost/api/… | Backend API, through Traefik |
+| http://localhost:8090 | Traefik dashboard |
+| http://localhost:15672 | RabbitMQ management (`lyricsync` / `local_dev_only`) |
+
+Health and metrics (`/actuator/health`, `/actuator/prometheus`) are reachable only inside the Docker network, not through Traefik. `docker compose --profile app down` stops everything; add `-v` to wipe the data volumes.
+
+**Backend from your IDE or terminal**
 
 ```bash
 cd backend
+./mvnw spring-boot:run   # starts Postgres and RabbitMQ from ../compose.yaml, then the app on :8080
 ./mvnw verify            # unit + Testcontainers integration tests
-./mvnw spring-boot:run   # starts Postgres via Docker Compose, then the app
 ```
-
-A single `docker compose up` for the whole stack is coming in OPS-2.4.
 
 ## Credits
 
