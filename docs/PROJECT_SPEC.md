@@ -148,6 +148,7 @@ Next.js (App Router) + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom she
 - **Review clips:** seek to the line start, play, stop at the line end (checked in rAF).
 - **Seeking needs HTTP range requests**: R2 supports them; the dev storage adapter must too.
 - **No request on tap:** the song response embeds tokens and meanings.
+- **Coming back to a song costs nothing:** TanStack Query keeps published songs in memory, and the MP3 comes from the browser cache because its URL never changes (section 7.7).
 
 ### 6.5 Gender colours
 Three colours that pass WCAG AA on the background, each with an `m`/`f`/`n` marker. Only nouns are coloured; plurals use their singular's gender. Legend in the player header; can be turned off in settings.
@@ -185,7 +186,7 @@ Infrastructure: PostgreSQL (one schema per module/service), RabbitMQ, Cloudflare
 ### 7.4 Ingestion pipeline
 ```
 POST /api/admin/songs (multipart)
-  → catalog: validate, store audio in R2, parse .lrc, save song + lines (PROCESSING)
+  → catalog: validate, store audio in R2 under its SHA-256, parse .lrc, save song + lines (PROCESSING)
   → event SongIngested ──(outbox → RabbitMQ song.ingested)──► nlp-service
   → nlp-service analyses lines → song.analyzed (tokens)
   → catalog saves tokens, dictionary links them, lines are translated
@@ -200,9 +201,8 @@ POST /api/admin/songs (multipart)
 | `POST /api/auth/signup`, `/login`, `/refresh`, `/logout` | identity | Cookies: short access token, rotating refresh token |
 | `POST /api/auth/verify-email`, `/password/forgot`, `/password/reset` | identity | Mails via Resend |
 | `DELETE /api/auth/account` | identity | Emits `AccountDeleted` |
-| `GET /api/songs?level=A1&page=` | backend | Published songs only |
-| `GET /api/songs/{slug}` | backend | Song + lines + tokens, meanings embedded |
-| `GET /api/songs/{id}/audio-url` | backend | Presigned R2 URL |
+| `GET /api/songs?level=A1&page=` | backend | Published songs only; cacheable (section 7.7) |
+| `GET /api/songs/{slug}` | backend | Song + lines + tokens with meanings embedded, plus `audioUrl` (public CDN URL); `ETag` from the song version |
 | `GET`, `PATCH /api/me/learner` | backend | Level, daily goal, timezone, settings |
 | `POST /api/me/guest-import` | backend | Merge guest data once after sign-up |
 | `GET /api/me/export` | backend | GDPR JSON export |
@@ -234,7 +234,19 @@ Example token in `GET /api/songs/{slug}`:
 | `song.analyzed` | nlp-service → catalog (RabbitMQ) | tokens per line |
 | `AccountCreated` | identity → learning (RabbitMQ) | account id, email verified flag |
 | `AccountDeleted` | identity → learning, catalog (RabbitMQ) | account id |
-| `SongPublished`, `SongCompleted` | inside the backend (Modulith) | ids |
+| `SongPublished`, `SongReanalysed`, `SongUnpublished`, `SongCompleted` | inside the backend (Modulith) | ids; the first three also clear cached song responses |
+
+### 7.7 Caching
+Details and reasons: [ADR-0011](adr/0011-caching-strategy.md).
+
+| What | Where it's cached | Until |
+|---|---|---|
+| Audio | Browser + Cloudflare CDN: public URL `audio/<sha256>.mp3`, `Cache-Control: public, max-age=31536000, immutable` | Forever (a new upload is a new URL) |
+| Published song JSON, library pages | Browser (TanStack Query, `ETag` revalidation), CDN (`max-age=60, stale-while-revalidate=600`), backend Caffeine | The song is republished, re-analysed or unpublished |
+| Frequent dictionary forms (ingestion) | Backend Caffeine | Size limit |
+| Learner data (reviews, saved words, streak, settings) | Browser memory only; server sends `Cache-Control: private, no-store` | Every change the learner makes |
+
+No Redis while there's a single backend instance; no Hibernate second-level cache. Cache hit ratios are exported as Prometheus metrics.
 
 ---
 
@@ -242,7 +254,7 @@ Example token in `GET /api/songs/{slug}`:
 
 **catalog**
 - `artist` (id, name — unique, case-insensitive)
-- `song` (id, slug, title, artist_id, language_code, cefr_level, duration_ms, status, failure_reason, license_type, license_note, audio_key, cover_image_url, sync_granularity, created_at, published_at)
+- `song` (id, slug, title, artist_id, language_code, cefr_level, duration_ms, status, version, failure_reason, license_type, license_note, audio_key (SHA-256 of the file), cover_image_url, sync_granularity, created_at, published_at)
 - `song_line` (id, song_id, line_index, raw_text, start_ms, end_ms, is_instrumental, contextual_translation, cultural_note)
 - `token` (id, line_id, token_index, surface, lemma, pos, gender, morph, char_start, char_end, separable_lemma, partner_token_id, dictionary_entry_id, match_status)
 
@@ -272,6 +284,7 @@ Example token in `GET /api/songs/{slug}`:
 - **CI:** GitHub Actions builds and tests every PR; images for `main` go to GHCR with a vulnerability scan.
 - **API docs:** OpenAPI (springdoc) per Spring app.
 - **Observability:** Actuator health, Prometheus metrics and JSON logs, shipped to Grafana Cloud's free tier.
+- **Performance:** layered caching from the browser to the backend (section 7.7); returning to a song downloads nothing.
 - **Accessibility:** keyboard-navigable player and tokens, visible focus, WCAG AA contrast, never colour alone.
 - **Security:** BCrypt, httpOnly cookies, ADMIN checked in the service (and routed only via Traefik), input validation, upload size and type limits, rate limits at the edge.
 - **Privacy:** only essential cookies, no tracking, account deletion and export.
@@ -295,6 +308,7 @@ Example token in `GET /api/songs/{slug}`:
 | Line translations | DeepL API Free (500k characters/month), once per line | €0 |
 | NLP | spaCy, self-hosted | €0 |
 | Audio | Cloudflare R2 free tier (10 GB, no egress fees) | €0 |
+| CDN | Cloudflare (comes with the domain) caches audio and public API responses | €0 |
 | Email | Resend free tier | €0 |
 | Monitoring | Grafana Cloud free tier | €0 |
 | CI + images | GitHub Actions + GHCR (public repo) | €0 |
@@ -311,7 +325,7 @@ The web app is self-hosted on the VPS (Vercel's hobby tier does not allow commer
 |--------|------|
 | **1 · LRC ingestion core** (done) | Parser, decoder, validator, schema, persistence, admin endpoint |
 | **2 · Foundation** | Monorepo + Modulith, docs v2, CI, local stack, architecture tests, parser fixes, song lifecycle, ingestion hardening |
-| **3 · Player v1** | R2 audio, public song API, Next.js app, synced player, loop and speed |
+| **3 · Player v1** | R2 audio behind the CDN, cached public song API, Next.js app, synced player, loop and speed |
 | **4 · NLP and dictionary** | nlp-service, dictionary import, RabbitMQ pipeline, token linking, DeepL, word card, gender colours |
 | **5 · Accounts and review** | identity-service, learner profile, saved words + sightings, FSRS reviews, guest merge, streak |
 | **6 · Levels, admin and launch** | Onboarding, library progress, admin UI with sync preview, token review, publishing, privacy features, VPS + Compose, CD, monitoring, backups, seed songs, README — **launch** |
