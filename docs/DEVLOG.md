@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-11-21 — OPS-2.3: CI with GitHub Actions
+
+- PRs run `./mvnw verify` with Testcontainers on Temurin 21; a "CI result" gate job always reports, so branch protection can require it without blocking docs-only PRs
+- Every backend PR builds the image and runs a Trivy gate on fixable CRITICALs; on `main` the report goes to the Security tab and the image is pushed to GHCR (`sha-<short>`, `main`)
+- Layered, non-root Dockerfile (moved here from OPS-2.4)
+- Actions pinned by commit SHA (trivy-action tags were hijacked earlier this year); Dependabot keeps them current
+- Broke / learned: the `/mvnw text eol=lf` rule was anchored to the old repo root, so after the move `mvnw` came out with CRLF and without the executable bit
+- The image gate's first run blocked 4 CRITICAL CVEs in `tomcat-embed-core` 11.0.24; Spring Boot 4.1.1 → 4.1.2 brings Tomcat 11.0.27
+
+**Branch:** `chore/OPS-2.3-ci`
+
+---
+
 ## 2026-11-21 — DOC-2.2: Docs v2
 
 - `GLOSSARY.md`: one vocabulary for code, tests and docs (Song, Line, Token, Saved word, Sighting, Learner vs Account …)
