@@ -13,6 +13,23 @@ spring:
       max-file-size: 20MB
       max-request-size: 21MB
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
 app:
   storage:
     audio-root: ${AUDIO_STORAGE_ROOT:./data/audio}
