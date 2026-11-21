@@ -1,5 +1,17 @@
 # Development Log
 
+## 2026-11-21 — DOC-2.9: Caching strategy
+
+- ADR-0011: cache shared, rarely changing data close to the learner; never cache one learner's data on the server
+- Audio switches from presigned URLs to public, content-hashed CDN URLs (`immutable`, one year): a new signature per request would have made the browser download the same MP3 again every visit (ADR-0005 amended)
+- Song JSON: TanStack Query + `ETag` + CDN + Caffeine, cleared by publish/re-analyse events; learner data `private, no-store`
+- No Redis (single backend instance) and no Hibernate second-level cache
+- Spec (new section 7.7, API, data model) and architecture (caching section + diagram) updated
+
+**Branch:** `docs/DOC-2.9-caching`
+
+---
+
 ## 2026-11-21 — OPS-2.3b: Keep Dependabot on Java 21 base images
 
 - Dependabot's first run proposed `eclipse-temurin` 21 → 24; closed it and ignored major updates for the base image, so only Java 21 patches come through
