@@ -34,3 +34,7 @@ updates:
     commit-message:
       prefix: build
       include: scope
+    ignore:
+      # the project stays on Java 21 (LTS); only take patches of the 21 images
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]

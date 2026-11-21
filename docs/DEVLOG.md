@@ -1,5 +1,14 @@
 # Development Log
 
+## 2026-11-21 — OPS-2.3b: Keep Dependabot on Java 21 base images
+
+- Dependabot's first run proposed `eclipse-temurin` 21 → 24; closed it and ignored major updates for the base image, so only Java 21 patches come through
+- Merged its other two PRs: `actions/setup-java` 6.3.0 and the Maven wrapper 3.10.1
+
+**Branch:** `fix/OPS-2.3b-dependabot-java21`
+
+---
+
 ## 2026-11-21 — OPS-2.3: CI with GitHub Actions
 
 - PRs run `./mvnw verify` with Testcontainers on Temurin 21; a "CI result" gate job always reports, so branch protection can require it without blocking docs-only PRs
