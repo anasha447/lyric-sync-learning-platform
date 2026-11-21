@@ -11,7 +11,7 @@ flowchart LR
     subgraph lyricsync
         app[lyricsync platform]
     end
-    r2[(Cloudflare R2<br/>audio)]
+    r2[(Cloudflare R2 + CDN<br/>audio)]
     deepl[DeepL API Free<br/>line translations]
     kaikki[kaikki.org<br/>Wiktionary extract]
     resend[Resend<br/>emails]
@@ -19,7 +19,7 @@ flowchart LR
 
     learner -->|listens, taps, reviews| app
     admin -->|uploads, reviews, publishes| app
-    learner -.->|streams audio via presigned URL| r2
+    learner -.->|streams audio, cached by browser + CDN| r2
     app -->|stores audio| r2
     app -->|once per line, at ingestion| deepl
     app -->|one-off import| kaikki
@@ -141,21 +141,45 @@ sequenceDiagram
     L->>W: open /review
     W->>B: GET /api/reviews/due
     B->>CA: line text + clip times for each chosen sighting
-    B-->>W: due saved words with clip info
-    W->>B: GET /api/songs/{id}/audio-url
-    W->>R2: range request, play start_ms → end_ms
+    B-->>W: due saved words with clip info + audioUrl
+    W->>R2: range request, play start_ms → end_ms (browser cache first)
     L->>W: Good
     W->>B: POST /api/reviews/{id}/grade
     B->>B: FSRS → next due time, log review, update streak
 ```
 
-## 6. Authentication
+## 6. Caching
+
+Rule of thumb: cache what is shared and rarely changes as close to the learner as possible; never cache one learner's data on the server ([ADR-0011](adr/0011-caching-strategy.md)).
+
+```mermaid
+flowchart LR
+    tq[TanStack Query<br/>memory] --> bc[Browser HTTP cache]
+    bc --> cdn[Cloudflare CDN]
+    cdn --> traefik[Traefik]
+    traefik --> caffeine[Caffeine<br/>in the backend]
+    caffeine --> pg[(PostgreSQL)]
+    cdn --> r2[(R2 audio)]
+```
+
+| Request | First hit that answers it |
+|---|---|
+| Back to a song in the same session | TanStack Query (no request) |
+| The song's MP3 again, any time | Browser cache (immutable, content-hashed URL) |
+| Song JSON after a reload | Browser revalidates with `ETag` and gets `304 Not Modified` |
+| Song JSON for another learner | Cloudflare CDN |
+| First request after a publish | Caffeine, then PostgreSQL once |
+| Due reviews, saved words, streak | Always the backend and database (`private, no-store`) |
+
+`SongPublished`, `SongReanalysed` and `SongUnpublished` events clear the affected Caffeine entries and bump the song's version, which changes its `ETag`.
+
+## 7. Authentication
 
 - identity-service issues a short-lived RS256 access token and a rotating refresh token, both as httpOnly, `SameSite=Lax` cookies on the app's own domain ([ADR-0006](adr/0006-own-identity-service.md)).
 - The backend validates tokens against identity's JWKS endpoint, checks the `ADMIN` role for admin routes, and never sees passwords.
 - `AccountCreated` creates the learner; `AccountDeleted` removes all learner data ([ADR-0009](adr/0009-account-and-learner.md)).
 
-## 7. Deployment
+## 8. Deployment
 
 **v1: Docker Compose on one VPS** ([ADR-0003](adr/0003-compose-first-kubernetes-later.md))
 
@@ -177,7 +201,7 @@ flowchart LR
 
 **Stretch: single-node k3s.** Same images; Argo CD syncs Kustomize manifests from the repo, CloudNativePG runs Postgres with backups to R2, cert-manager handles certificates, and Sealed Secrets keeps secrets in git.
 
-## 8. Repository layout
+## 9. Repository layout
 
 ```
 /
