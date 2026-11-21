@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-11-21 — OPS-2.4: Local stack with Docker Compose
+
+- Root `compose.yaml`: Postgres + RabbitMQ by default, Traefik + backend in the `app` profile; DB and broker ports bound to 127.0.0.1 only
+- `./mvnw spring-boot:run` starts the infra from the same file via Spring Boot's Docker Compose support
+- Actuator: health with readiness/liveness probes, Prometheus metrics tagged `application=lyricsync-backend`; only health, info and prometheus are exposed, and Traefik doesn't route `/actuator`
+- springdoc 3.2.0 (built against Boot 4.1.2): Swagger UI at `/swagger-ui.html`
+- JSON logs (ECS) in the container through Spring Boot's structured logging, plain text in the IDE
+- Shared `TestcontainersConfiguration` for full-context tests; `OperationalEndpointsTest` written first, red → green
+- Database renamed `content_ingestion` → `lyricsync`; image gets a writable `/data/audio` for the non-root user
+
+**Branch:** `chore/OPS-2.4-local-stack`
+---
+
 ## 2026-11-21 — DOC-2.9: Caching strategy
 
 - ADR-0011: cache shared, rarely changing data close to the learner; never cache one learner's data on the server
