@@ -1,5 +1,16 @@
 # Development Log
 
+## 2026-11-21 — DOC-2.2: Docs v2
+
+- `GLOSSARY.md`: one vocabulary for code, tests and docs (Song, Line, Token, Saved word, Sighting, Learner vs Account …)
+- Ten ADRs in `docs/adr/`: monorepo, modular monolith + identity + nlp, Compose before k3s, FSRS, R2, own identity service, Traefik, license policy, account vs learner, no external calls at runtime
+- `docs/PROJECT_SPEC.md` v2 and `docs/ARCHITECTURE.md` with Mermaid diagrams (context, apps, modules, ingestion, review, deployment)
+- DEVLOG moved to `docs/`; README added
+
+**Branch:** `docs/DOC-2.2-docs-v2`
+
+---
+
 ## 2026-11-21 — OPS-2.1: Monorepo layout and Spring Modulith backend
 
 - Repo root is now the whole project; the service lives in `backend/`, history kept (`git log --follow` works)
