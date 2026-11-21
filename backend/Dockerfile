@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build: compile the jar and split it into layers ----
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:24-jdk-alpine AS build
 WORKDIR /src
 
 # dependencies change less often than code, so they get their own cached layer
@@ -14,7 +14,7 @@ RUN ./mvnw -B -q package -DskipTests \
  && java -Djarmode=tools -jar target/lyricsync-backend-*.jar extract --layers --launcher --destination /extracted
 
 # ---- runtime: JRE only, non-root ----
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
 USER app
 WORKDIR /app
