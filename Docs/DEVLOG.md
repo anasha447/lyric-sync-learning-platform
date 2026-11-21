@@ -1,5 +1,17 @@
 # Development Log
 
+## 2026-11-21 — BE-1.6: Admin song ingestion endpoint
+
+- `IngestSongUseCase` chains decode → parse → validate, then stores audio, finds or creates the artist, saves the song
+- Validation fails before any I/O, so a bad file never writes audio or rows
+- `IngestResult` is sealed (Success / ValidationFailure), so the controller's switch covers both outcomes
+- `POST /api/content/admin/songs` (multipart): 201 with the song, 422 with line errors
+- Upload limit raised to 20 MB (Spring's 1 MB default rejected real MP3s); `app.storage` moved out of the `spring:` block so the context starts
+- Known gaps, picked up in Sprint 2: no input validation, no error handler, no auth, not transactional
+
+**Branch:** `feature/BE-1.6-song-ingestion-endpoint`
+
+---
 
 ## 2026-09-24 — BE-1.5: Song Aggregate Persistence Adapters
 

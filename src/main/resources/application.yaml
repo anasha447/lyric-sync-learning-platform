@@ -8,3 +8,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+
+app:
+  storage:
+    audio-root: ${AUDIO_STORAGE_ROOT:./data/audio}
