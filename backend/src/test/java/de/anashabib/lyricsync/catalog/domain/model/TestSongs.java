@@ -28,6 +28,14 @@ public final class TestSongs {
                 s.publishedAt());
     }
 
+    /** A song the library shows: analysed and published. */
+    public static Song published(UUID artistId, String title, CefrLevel level) {
+        return Song.draft(Slug.fromTitle(title), title, artistId, level, 60_000, LicenseType.PUBLIC_DOMAIN,
+                        "Public domain, Wikisource", new AudioKey("audio/" + Slug.fromTitle(title).value() + ".mp3"),
+                        List.of(line(0, 1_000, 5_000, "Erste Zeile"), line(1, 5_000, 9_000, "Zweite Zeile")))
+                .submitForAnalysis().analysisSucceeded().publish(Instant.parse("2026-11-22T10:00:00Z"));
+    }
+
     public static SongLine line(int index, int startMs, int endMs, String text) {
         return new SongLine(null, index, text, startMs, endMs, text.isBlank(), null, null);
     }

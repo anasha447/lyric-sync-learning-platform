@@ -16,6 +16,12 @@ spring:
     compose:
       # `./mvnw spring-boot:run` starts Postgres and RabbitMQ from the root compose file
       file: ../compose.yaml
+  cache:
+    # fixed names: a typo in a @Cacheable fails at startup instead of quietly creating a new cache
+    cache-names: publishedSongs, publishedSongPages
+    caffeine:
+      # recordStats feeds cache_gets_total{result="hit|miss"} to Prometheus
+      spec: maximumSize=500,expireAfterWrite=10m,recordStats
 
 management:
   endpoints:
@@ -37,3 +43,5 @@ springdoc:
 app:
   storage:
     audio-root: ${AUDIO_STORAGE_ROOT:./data/audio}
+    # where browsers fetch audio from; BE-3.1 points it at the R2 custom domain behind Cloudflare
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL:http://localhost/media}

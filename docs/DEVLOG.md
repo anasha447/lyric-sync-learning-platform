@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-22 — BE-3.2: Public song API with caching
+
+- `GET /api/songs?level=&page=` (published only, by title, 20 per page) and `GET /api/songs/{slug}` (lines + `audioUrl`)
+- A separate read port, `PublishedSongQueryPort`: the list is one JPQL query joined with the artist, without loading lines
+- `ETag: "v<version>"` and `Cache-Control: public, max-age=60, stale-while-revalidate=600`; Spring answers 304 on a matching `If-None-Match`
+- Spring Cache + Caffeine (new dependencies, approved): `publishedSongs` and `publishedSongPages`, at most 500 entries, 10 min as a safety net; "not found" isn't cached
+- `SongPublished`, `SongUnpublished`, `SongReanalysed` in the catalog API package; caches are emptied after the commit (`@TransactionalEventListener`) so a reader can't put an old row back in between
+- Hit and miss counts in Prometheus (`cache_gets_total`)
+- Proven with a spy on the query port: the second read doesn't reach the database; removing `@Cacheable` makes exactly those tests fail
+- A slug that can't exist (`Das Model!`) is a 404, an unknown level a 400, both as problem+json
+
+**Branch:** `feature/BE-3.2-public-song-api`
+
+---
+
 ## 2026-11-22 — BE-2.8: Ingestion hardening
 
 - Use case behind an input port (`IngestSongUseCase` interface, `IngestSongService` implementation); command and result moved to `application/port/in`
