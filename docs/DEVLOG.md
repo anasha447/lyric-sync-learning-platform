@@ -1,5 +1,17 @@
 # Development Log
 
+## 2026-11-23 — DOC-3.7b: Design system fixes from the skill tests
+
+- Testing the local `lyricsync-design` skill (3 requests, with and without the skill) surfaced six gaps in DESIGN.md
+- `spring-soft` damping 30 → 35: damping ratio 0.87 overshot by about 0.4 %, against our own No-Bounce rule; 1.01 settles exactly
+- `hairline`, `hairline-strong` and `error` are now frontmatter tokens, not only prose; card hover uses `hairline-strong`
+- Cover alt text empty inside links that already show the title, so screen readers don't read it twice
+- 404 songs go to the 404 page instead of "Try again"; guests get their own vocabulary empty state
+
+**Branch:** `docs/DOC-3.7b-design-fixes`
+
+---
+
 ## 2026-11-23 — DOC-3.7: Design docs
 
 - Design interview before any frontend code: onboarding, home, song page, colours, fonts, motion

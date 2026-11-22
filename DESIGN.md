@@ -16,6 +16,9 @@ colors:
   gender-der: "#6EA8FE"
   gender-die: "#FF7A8A"
   gender-das: "#8BD66B"
+  hairline: "rgba(245, 243, 247, 0.08)"
+  hairline-strong: "rgba(245, 243, 247, 0.16)"
+  error: "#FF6B6B"
 typography:
   display:
     fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
@@ -190,6 +193,7 @@ Under red-green colour blindness (deuteranopia, about 1 in 12 men) **die** and *
 - **Ink** (`#F5F3F7`): primary text and icons (17.63:1 on `night`).
 - **Ink Muted** (`#B9AEC6`): secondary text, inactive lyric lines, timestamps at rest, placeholder text (9.19:1 on `night`, 6.53:1 on `plum`).
 - **Hairline** (`rgba(245, 243, 247, 0.08)`): borders and dividers.
+- **Hairline Strong** (`rgba(245, 243, 247, 0.16)`): the same border when its card is hovered or selected.
 - **Error** (`#FF6B6B`): form and load errors, always with an alert icon and a sentence (7.01:1 on `night`, 6.46:1 on `dusk`). It only appears in forms and messages, never in lyrics, so it can't be mistaken for **die**.
 
 ### Named Rules
@@ -316,7 +320,7 @@ Motion is part of lyricsync's identity: smooth, unhurried, never bouncy, always 
 | `duration-ambient` | 600 ms | glow crossfade between songs |
 | `ease-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | anything entering or settling |
 | `ease-in` | `cubic-bezier(0.4, 0, 1, 1)` | anything leaving (about 20 % shorter than its entrance) |
-| `spring-soft` | stiffness 300, damping 30, mass 1 (no overshoot) | the play button, card lift, word-card pop |
+| `spring-soft` | stiffness 300, damping 35, mass 1 (damping ratio ≈ 1.0: settles without overshoot) | the play button, card lift, word-card pop |
 | `stagger` | 30 ms per item, at most 8 items | lists and grids appearing |
 
 ### Signature motions
@@ -340,7 +344,7 @@ Motion is part of lyricsync's identity: smooth, unhurried, never bouncy, always 
 - **Pages:** fade in and rise 8 px over `duration-slow` (`ease-out`); leaving pages simply fade out (`ease-in`, 200 ms).
 - **Lists and grids:** items fade in and rise 8 px, staggered.
 - **Song cards:**
-  - hover lifts the cover 4 px and brightens its border, over `duration-instant`
+  - hover lifts the cover 4 px and its border becomes `hairline-strong`, over `duration-instant`
   - the cover zooms 1.03 inside its frame
 - **Word card:** pops from the tapped word (scale 0.96 → 1, fade) with `spring-soft`; on phones the bottom sheet slides up over `duration-slow`.
 - **Onboarding:**
@@ -448,12 +452,14 @@ Shapes of the real content (cover squares, two text lines) in `plum` at 60 % wit
 ### Empty and error states
 One calm line plus one action, centred, with a soft generated-art graphic.
 - **Vocabulary empty:** *"Tap any word in a song to save it."* → **Browse songs**
+- **Vocabulary for a guest:** *"Sign up to keep the words you tap."* → **Sign up to save words**
 - **Review empty:** *"Nothing due. Come back tomorrow, or play a song."* → **Play a song**
-- **Error:** *"We couldn't load this song."* → **Try again**. Never a raw error code.
+- **Error:** *"We couldn't load this song."* → **Try again**, only for failures a retry can fix (network, server). Never a raw error code.
+- **A song that doesn't exist or isn't published (404):** the 404 page, not "Try again".
 - **Offline:** a slim notice at the top: *"You're offline. Songs you've opened still play."*
 
 ### Cover
-Square, `object-fit: cover`. Uploaded covers are served from R2 with long caching. Without one, the generated artwork (see Shapes). Alt text: the song title.
+Square, `object-fit: cover`. Uploaded covers are served from R2 with long caching. Without one, the generated artwork (see Shapes). Alt text: the song title, except where the title is already visible in the same link (song cards, continue listening, the player bar): there the cover is decorative (`alt=""`), so screen readers don't read the title twice.
 
 ## Pages
 
