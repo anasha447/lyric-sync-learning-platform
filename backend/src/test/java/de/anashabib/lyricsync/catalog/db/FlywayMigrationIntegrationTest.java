@@ -63,6 +63,15 @@ class FlywayMigrationIntegrationTest {
     }
 
     @Test
+    void rejectsAnArtistNameThatDiffersOnlyInCase() {
+        jdbcTemplate.update("INSERT INTO catalog.artist (id, name) VALUES (gen_random_uuid(), 'Rammstein')");
+
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO catalog.artist (id, name) VALUES (gen_random_uuid(), 'rammstein')"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void rejectsDuplicateLineIndexWithinASong() {
         UUID songId = insertTestSong();
         jdbcTemplate.update("""
@@ -95,7 +104,8 @@ class FlywayMigrationIntegrationTest {
     private UUID seedLanguageAndArtist() {
         jdbcTemplate.update("INSERT INTO catalog.language (code, name) VALUES ('de', 'German') ON CONFLICT DO NOTHING");
         UUID artistId = UUID.randomUUID();
-        jdbcTemplate.update("INSERT INTO catalog.artist (id, name) VALUES (?, 'Test Artist')", artistId);
+        // rows here are committed, not rolled back, and artist names must be unique
+        jdbcTemplate.update("INSERT INTO catalog.artist (id, name) VALUES (?, ?)", artistId, "Artist " + artistId);
         return artistId;
     }
 
