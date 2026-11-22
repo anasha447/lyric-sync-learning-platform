@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-22 — BE-2.7: Song lifecycle and catalog schema
+
+- Four migrations: V2 moves the tables into a `catalog` schema with singular names, V3 makes artist names unique ignoring case (existing duplicates merged), V4 renames the audio column to `audio_key`, V5 adds status, slug, version, license note, failure reason and publish date
+- Every migration backfills existing rows; `CatalogMigrationsKeepExistingDataTest` fills a V1 database and runs the rest over it
+- `Song` checks its invariants in the constructor (title, license note, at least one line, line order and times, failure reason only when FAILED, publish date and level when PUBLISHED); status changes are methods that return a new Song
+- New uploads are DRAFT, not PROCESSING: nothing analyses songs until BE-4.4
+- Slugs from titles (`Hänschen klein` → `haenschen-klein`, then `-2`, `-3`); audio stored under its SHA-256; `version` is JPA's optimistic lock and the future ETag
+- License types now match ADR-0008 (`cc_by_sa` added; `original` → `own_recording`, `licensed` → `written_permission`); a license note is required
+- The same rules are database constraints; each negative schema test checks the named constraint, so it can't pass because of a different error
+- Broke / learned: Python's `write_text` on Windows writes the ANSI code page, not UTF-8; two comments came out as invalid bytes and javac flagged them
+
+**Branch:** `feature/BE-2.7-song-lifecycle`
+
+---
+
 ## 2026-11-22 — BE-2.6: LRC parser fixes
 
 - `[offset:+N]` now shows lyrics N ms sooner, as in the LRC convention; it was applied the wrong way round
