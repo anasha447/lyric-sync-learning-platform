@@ -13,6 +13,7 @@ import de.anashabib.lyricsync.catalog.domain.model.Slug;
 import de.anashabib.lyricsync.catalog.domain.model.Song;
 import de.anashabib.lyricsync.catalog.domain.model.SongStatus;
 import de.anashabib.lyricsync.catalog.domain.parser.LrcParser;
+import de.anashabib.lyricsync.catalog.domain.validation.AudioValidator;
 import de.anashabib.lyricsync.catalog.domain.validation.LrcValidator;
 import de.anashabib.lyricsync.catalog.domain.validation.ValidationError;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class IngestSongServiceTest {
 
+    private static final byte[] MP3 = "ID3 and then the audio".getBytes();
+
     @Mock AudioStoragePort audioStoragePort;
     @Mock ArtistRepositoryPort artistRepositoryPort;
     @Mock SongRepositoryPort songRepositoryPort;
@@ -42,7 +45,7 @@ class IngestSongServiceTest {
     @BeforeEach
     void setUp() {
         useCase = new IngestSongService(
-                new LrcTextDecoder(), new LrcParser(), new LrcValidator(), // real — pure, already tested
+                new LrcTextDecoder(), new LrcParser(), new LrcValidator(), new AudioValidator(), // real — pure, already tested
                 audioStoragePort, artistRepositoryPort, songRepositoryPort  // mocked — I/O boundaries
         );
     }
@@ -112,7 +115,7 @@ class IngestSongServiceTest {
     @Test
     void returnsValidationFailureWithoutTouchingStorageOrDatabase() {
         IngestSongCommand command = new IngestSongCommand(
-                "audio".getBytes(), "song.mp3",
+                MP3, "song.mp3",
                 "[99:00.00]Way past the end".getBytes(StandardCharsets.UTF_8), null,
                 "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 10_000 // 10s track, line at 99 minutes
         );
@@ -126,7 +129,7 @@ class IngestSongServiceTest {
     @Test
     void nonNumericOffsetIsAValidationFailureNotACrash() {
         IngestSongCommand command = new IngestSongCommand(
-                "audio".getBytes(), "song.mp3",
+                MP3, "song.mp3",
                 "[offset:abc]\n[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
                 "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 20_000
         );
@@ -140,7 +143,7 @@ class IngestSongServiceTest {
     @Test
     void rejectsRequestWithNeitherLrcFileNorPastedText() {
         IngestSongCommand command = new IngestSongCommand(
-                "audio".getBytes(), "song.mp3", null, null,
+                MP3, "song.mp3", null, null,
                 "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 10_000
         );
 
@@ -153,7 +156,7 @@ class IngestSongServiceTest {
     @Test
     void rejectsUnknownLicenseType() {
         IngestSongCommand command = new IngestSongCommand(
-                "audio".getBytes(), "song.mp3",
+                MP3, "song.mp3",
                 "[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
                 "Test", "Artist", "A2", "stolen", "Found it online", 20_000
         );
@@ -208,7 +211,7 @@ class IngestSongServiceTest {
 
     private IngestSongCommand validCommand(String artistName) {
         return new IngestSongCommand(
-                "audio".getBytes(), "song.mp3",
+                MP3, "song.mp3",
                 "[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
                 "Test Song", artistName, "A2", "public_domain", "Public domain, Wikisource", 20_000
         );
@@ -216,9 +219,24 @@ class IngestSongServiceTest {
 
     private IngestSongCommand command(String title, String level, String licenseNote, int durationMs) {
         return new IngestSongCommand(
-                "audio".getBytes(), "song.mp3",
+                MP3, "song.mp3",
                 "[00:00.00]Line".getBytes(StandardCharsets.UTF_8), null,
                 title, "Traditional", level, "public_domain", licenseNote, durationMs
         );
+    }
+
+    @Test
+    void rejectsAudioThatIsNotAnMp3AlongWithTheOtherProblems() {
+        IngestSongCommand command = new IngestSongCommand(
+                "RIFF....WAVE".getBytes(), "song.mp3", null, null,
+                "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 20_000
+        );
+
+        IngestResult result = useCase.ingest(command);
+
+        assertThat(((IngestResult.ValidationFailure) result).errors())
+                .extracting(ValidationError::message)
+                .containsExactly("The audio file is not an MP3", "Either an .lrc file or pasted .lrc text is required");
+        verifyNoInteractions(audioStoragePort, songRepositoryPort);
     }
 }

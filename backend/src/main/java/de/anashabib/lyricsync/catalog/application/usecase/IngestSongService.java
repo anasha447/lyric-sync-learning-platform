@@ -10,6 +10,7 @@ import de.anashabib.lyricsync.catalog.domain.encoding.LrcTextDecoder;
 import de.anashabib.lyricsync.catalog.domain.encoding.UndecodableTextException;
 import de.anashabib.lyricsync.catalog.domain.model.*;
 import de.anashabib.lyricsync.catalog.domain.parser.LrcParser;
+import de.anashabib.lyricsync.catalog.domain.validation.AudioValidator;
 import de.anashabib.lyricsync.catalog.domain.validation.LrcValidator;
 import de.anashabib.lyricsync.catalog.domain.validation.ValidationError;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +29,14 @@ public class IngestSongService implements IngestSongUseCase {
     private final LrcTextDecoder lrcTextDecoder;
     private final LrcParser lrcParser;
     private final LrcValidator lrcValidator;
+    private final AudioValidator audioValidator;
     private final AudioStoragePort audioStoragePort;
     private final ArtistRepositoryPort artistRepositoryPort;
     private final SongRepositoryPort songRepositoryPort;
 
     @Override
     public IngestResult ingest(IngestSongCommand command) {
-        List<ValidationError> errors = new ArrayList<>();
+        List<ValidationError> errors = new ArrayList<>(audioValidator.validate(command.audioBytes()));
 
         if (command.lrcBytes() == null && isBlank(command.lrcText())) {
             errors.add(ValidationError.fileLevel("Either an .lrc file or pasted .lrc text is required"));

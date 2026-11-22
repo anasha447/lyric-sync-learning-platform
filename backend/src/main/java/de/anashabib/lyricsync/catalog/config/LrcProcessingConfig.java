@@ -2,6 +2,7 @@ package de.anashabib.lyricsync.catalog.config;
 
 import de.anashabib.lyricsync.catalog.domain.encoding.LrcTextDecoder;
 import de.anashabib.lyricsync.catalog.domain.parser.LrcParser;
+import de.anashabib.lyricsync.catalog.domain.validation.AudioValidator;
 import de.anashabib.lyricsync.catalog.domain.validation.LrcValidator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,11 @@ public class LrcProcessingConfig {
     @Bean
     public LrcValidator lrcValidator() {
         return new LrcValidator();
+    }
+
+    @Bean
+    public AudioValidator audioValidator() {
+        return new AudioValidator();
     }
 
     @Bean
