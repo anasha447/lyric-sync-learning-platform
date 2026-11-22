@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,6 +60,18 @@ class SongIngestionEndToEndTest {
 
         assertThat(audioRoot.resolve(AudioKey.ofMp3(audio).value())).exists();
         assertThat(countSongs("haenschen-klein")).isOne();
+    }
+
+    @Test
+    void servesStoredAudioLocallyLikeTheCdnWould() throws Exception {
+        byte[] audio = mp3("0123456789");
+        upload(audio, "Alle Vögel sind schon da", "Traditional").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/media/" + AudioKey.ofMp3(audio).value()).header("Range", "bytes=3-5"))
+                .andExpect(status().isPartialContent())                     // the player can seek
+                .andExpect(header().string("Content-Type", "audio/mpeg"))
+                .andExpect(header().string("Cache-Control", "max-age=31536000, public, immutable"))
+                .andExpect(content().string("012"));
     }
 
     @Test

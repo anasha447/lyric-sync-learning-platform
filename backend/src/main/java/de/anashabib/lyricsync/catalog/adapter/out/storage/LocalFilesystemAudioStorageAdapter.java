@@ -4,13 +4,16 @@ import de.anashabib.lyricsync.catalog.application.port.out.AudioStorageException
 import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
 import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/** The default for development and tests; production uses R2 ({@code app.storage.type=r2}). */
 @Component
+@ConditionalOnProperty(name = "app.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalFilesystemAudioStorageAdapter implements AudioStoragePort {
 
     private final Path storageRoot;
