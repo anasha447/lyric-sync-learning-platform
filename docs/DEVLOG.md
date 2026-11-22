@@ -1,5 +1,19 @@
 # Development Log
 
+## 2026-11-23 — DOC-3.7: Design docs
+
+- Design interview before any frontend code: onboarding, home, song page, colours, fonts, motion
+- `PRODUCT.md`: learners, reasons, voice, the four-step onboarding (name, level, why German, daily minutes)
+- `DESIGN.md` (DESIGN.md format, tokens in the frontmatter): the owner's palette kept, with two lighter tints and a `dusk` frame colour so every text colour passes WCAG AA; der/die/das colours with mandatory `m`/`f`/`n` markers (die and das look alike under deuteranopia); self-hosted Plus Jakarta Sans, Inter and JetBrains Mono (GDPR); motion tokens and signature motions (morphing play button, sine-wave timeline that flattens on pause, the singing line)
+- `docs/FRONTEND_ROADMAP.md`: every frontend ticket from Sprint 3 to launch, with its design focus
+- Glossary: Cover, Display name, Onboarding, Learning reason; Daily goal chosen as minutes
+- Spec: onboarding flow, `coverUrl`, `cover_key` + `cover_note`, learner `display_name` + `learning_reasons`
+- ui-ux-pro-max's data recommends claymorphism and country flags for language apps; DESIGN.md rejects that look on purpose
+
+**Branch:** `docs/DOC-3.7-design`
+
+---
+
 ## 2026-11-22 — BE-3.1: R2 audio storage
 
 - `R2AudioStorageAdapter` behind the existing `AudioStoragePort`: AWS SDK v2 S3 client against R2's S3 API (`region=auto`, path-style, JDK HTTP client; Netty and Apache excluded)
