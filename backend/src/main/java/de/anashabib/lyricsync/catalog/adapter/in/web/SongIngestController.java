@@ -40,7 +40,8 @@ public class SongIngestController {
         return new IngestSongCommand(
                 request.getAudio().getBytes(), request.getAudio().getOriginalFilename(),
                 lrcBytes, request.getLrcText(), request.getTitle(), request.getArtistName(),
-                request.getCefrLevel(), request.getLicenseType(), request.getDurationMs()
+                request.getCefrLevel(), request.getLicenseType(), request.getLicenseNote(),
+                request.getDurationMs()
         );
     }
 }

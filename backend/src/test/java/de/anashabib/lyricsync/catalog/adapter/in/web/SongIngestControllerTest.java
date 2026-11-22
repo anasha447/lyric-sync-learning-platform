@@ -29,8 +29,7 @@ class SongIngestControllerTest {
 
     @Test
     void returns201WithSavedSongOnSuccess() throws Exception {
-        Song saved = new Song(UUID.randomUUID(), "Test Song", UUID.randomUUID(), "de", "A2", 20000,
-                LicenseType.PUBLIC_DOMAIN, new AudioKey("audio/ref.mp3"), null, SyncGranularity.LINE, List.of(), Instant.now());
+        Song saved = TestSongs.draft();
         when(ingestSongUseCase.ingest(any())).thenReturn(new IngestResult.Success(saved));
 
         mockMvc.perform(multipart("/api/content/admin/songs")
@@ -39,9 +38,10 @@ class SongIngestControllerTest {
                         .param("title", "Test Song")
                         .param("artistName", "Traditional")
                         .param("licenseType", "public_domain")
+                        .param("licenseNote", "Public domain, Wikisource")
                         .param("durationMs", "20000"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("Test Song"));
+                .andExpect(jsonPath("$.title").value("Das Model"));
     }
 
     @Test
@@ -55,6 +55,7 @@ class SongIngestControllerTest {
                         .param("title", "Test Song")
                         .param("artistName", "Traditional")
                         .param("licenseType", "public_domain")
+                        .param("licenseNote", "Public domain, Wikisource")
                         .param("durationMs", "20000"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.errors[0].message").value("Bad file"));

@@ -9,5 +9,6 @@ public record IngestSongCommand(
         String artistName,
         String cefrLevel,
         String licenseType,
+        String licenseNote,
         int durationMs
 ) {}

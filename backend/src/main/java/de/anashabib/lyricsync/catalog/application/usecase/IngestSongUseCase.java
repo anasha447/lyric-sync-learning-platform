@@ -43,13 +43,17 @@ public class IngestSongUseCase {
         }
 
         Duration duration = Duration.ofMillis(command.durationMs());
+        if (command.durationMs() <= 0) {
+            errors.add(ValidationError.fileLevel("Duration must be positive"));
+        }
         ParsedLrc parsed = lrcParser.parse(lrcContent, duration);
         errors.addAll(lrcValidator.validate(parsed, duration));
 
         LicenseType licenseType = parseLicenseType(command.licenseType(), errors);
-        if (isBlank(command.artistName())) {
-            errors.add(ValidationError.fileLevel("Artist is required"));
-        }
+        CefrLevel level = parseLevel(command.cefrLevel(), errors);
+        requireText(command.title(), "Title is required", errors);
+        requireText(command.artistName(), "Artist is required", errors);
+        requireText(command.licenseNote(), "License note is required: source URL, attribution or permission", errors);
 
         if (!errors.isEmpty()) {
             return new IngestResult.ValidationFailure(errors); // nothing saved — audio, artist, song, none of it
@@ -58,7 +62,11 @@ public class IngestSongUseCase {
         AudioKey audioKey = AudioKey.ofMp3(command.audioBytes());
         audioStoragePort.store(audioKey, command.audioBytes());
         UUID artistId = resolveArtist(command.artistName()).id();
-        Song song = buildSong(command, parsed, duration, licenseType, audioKey, artistId);
+
+        // a draft until the analysis pipeline exists; BE-4.4 submits it for analysis (PROCESSING)
+        Song song = Song.draft(
+                uniqueSlugFor(command.title()), command.title().strip(), artistId, level, command.durationMs(),
+                licenseType, command.licenseNote().strip(), audioKey, toSongLines(parsed));
 
         return new IngestResult.Success(songRepositoryPort.save(song));
     }
@@ -78,8 +86,21 @@ public class IngestSongUseCase {
     private LicenseType parseLicenseType(String raw, List<ValidationError> errors) {
         try {
             return LicenseType.fromDbValue(raw);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            errors.add(ValidationError.fileLevel("Unknown or missing license type: " + raw));
+        } catch (IllegalArgumentException e) {
+            errors.add(ValidationError.fileLevel(e.getMessage()));
+            return null;
+        }
+    }
+
+    // optional at upload, required for publishing
+    private CefrLevel parseLevel(String raw, List<ValidationError> errors) {
+        if (isBlank(raw)) {
+            return null;
+        }
+        try {
+            return CefrLevel.fromCode(raw);
+        } catch (IllegalArgumentException e) {
+            errors.add(ValidationError.fileLevel(e.getMessage()));
             return null;
         }
     }
@@ -90,21 +111,31 @@ public class IngestSongUseCase {
                 .orElseGet(() -> artistRepositoryPort.save(new Artist(null, artistName)));
     }
 
-    private Song buildSong(IngestSongCommand command, ParsedLrc parsed, Duration duration,
-                           LicenseType licenseType, AudioKey audioKey, UUID artistId) {
-        List<SongLine> lines = IntStream.range(0, parsed.lines().size())
+    // "das-model", then "das-model-2", "das-model-3" … The unique index stays the real guard:
+    // two uploads of the same title at the same instant could still pick the same slug.
+    private Slug uniqueSlugFor(String title) {
+        Slug base = Slug.fromTitle(title);
+        Slug candidate = base;
+        for (int number = 2; songRepositoryPort.existsBySlug(candidate); number++) {
+            candidate = base.withNumber(number);
+        }
+        return candidate;
+    }
+
+    private List<SongLine> toSongLines(ParsedLrc parsed) {
+        return IntStream.range(0, parsed.lines().size())
                 .mapToObj(i -> {
                     LrcLine line = parsed.lines().get(i);
                     return new SongLine(null, i, line.text(), line.startMs(), line.endMs(),
                             line.instrumental(), null, null); // translation/note: filled by BE-4.x later
                 })
                 .toList();
+    }
 
-        return new Song(
-                null, command.title(), artistId, "de", command.cefrLevel(),
-                (int) duration.toMillis(), licenseType, audioKey, null,
-                SyncGranularity.LINE, lines, null
-        );
+    private void requireText(String value, String message, List<ValidationError> errors) {
+        if (isBlank(value)) {
+            errors.add(ValidationError.fileLevel(message));
+        }
     }
 
     private boolean isBlank(String s) {

@@ -14,5 +14,6 @@ public class IngestSongRequest {
     private String artistName;
     private String cefrLevel;
     private String licenseType;
+    private String licenseNote;     // source URL, attribution or permission
     private int durationMs;
 }
