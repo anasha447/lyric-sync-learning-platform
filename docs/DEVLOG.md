@@ -1,5 +1,21 @@
 # Development Log
 
+## 2026-11-22 — BE-2.8: Ingestion hardening
+
+- Use case behind an input port (`IngestSongUseCase` interface, `IngestSongService` implementation); command and result moved to `application/port/in`
+- `POST /api/admin/songs` (the spec's route; was `/api/content/admin/songs`): 201 with a `SongResponse` DTO and a relative `Location` header, no more domain records on the wire
+- Bean Validation on the form (required fields, lengths matching the columns, level, positive duration); a request without audio used to be a NullPointerException
+- One `@RestControllerAdvice`, everything as problem+json: 400 lists every bad field, 413 over 20 MB, 422 lists every problem in the file, 500 logs the error and shows nothing internal
+- `AudioStorageException` moved into the storage port; the web adapter may not import the storage adapter (the BE-2.5 architecture test would have failed)
+- Only MP3, decided by the first bytes (ID3 tag or a Layer III frame), not by file name or Content-Type; AAC with the same sync bits is rejected
+- Audio stored first, then artist + song in one transaction; if that fails, the audio is deleted again, but only if this upload wrote it (content-hash files can be shared). End-to-end test with a real slug clash
+- Tried on the stack: 201, 422 for a WAV named .mp3, 400, 413 in 60 ms from inside the Docker network
+- Broke / learned: German titles looked broken twice ("M�nnlein"); the database held correct UTF-8. Windows curl sent the command-line text in the ANSI code page, and Python printed to the console in it. Checked at byte level before calling it a bug
+
+**Branch:** `feature/BE-2.8-ingestion-hardening`
+
+---
+
 ## 2026-11-22 — BE-2.7: Song lifecycle and catalog schema
 
 - Four migrations: V2 moves the tables into a `catalog` schema with singular names, V3 makes artist names unique ignoring case (existing duplicates merged), V4 renames the audio column to `audio_key`, V5 adds status, slug, version, license note, failure reason and publish date
