@@ -42,6 +42,13 @@ springdoc:
 
 app:
   storage:
+    # local: files on disk, served by the backend under /media; r2: Cloudflare R2 (production)
+    type: ${STORAGE_TYPE:local}
     audio-root: ${AUDIO_STORAGE_ROOT:./data/audio}
-    # where browsers fetch audio from; BE-3.1 points it at the R2 custom domain behind Cloudflare
+    # where browsers fetch audio from: /media locally, the R2 bucket's public domain in production
     public-base-url: ${STORAGE_PUBLIC_BASE_URL:http://localhost/media}
+    r2:
+      endpoint: ${R2_ENDPOINT:}                    # https://<account id>.r2.cloudflarestorage.com
+      bucket: ${R2_BUCKET:lyricsync-audio}
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
