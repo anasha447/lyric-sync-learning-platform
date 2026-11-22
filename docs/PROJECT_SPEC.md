@@ -45,10 +45,10 @@ English (UI and translations) → German. The data model leaves room for more pa
 | F6 | **Save word** | Saves the *dictionary entry* with a *sighting* (song, line, token). Saving the same word from another song adds a sighting. |
 | F7 | **Review with song audio** | FSRS-scheduled *reviews*; each one replays the line of one of the word's sightings, rotating between them. |
 | F8 | **Line translation on request** | Per line, or for the whole song. |
-| F9 | **Levels** | Library tabs A1–B2; the learner picks a level at onboarding. |
+| F9 | **Levels and onboarding** | Library tabs A1–B2. A four-step *onboarding* on the first visit asks for a *display name* (optional), the level, *learning reasons* and daily minutes. |
 | F10 | **Admin ingestion + review** | Upload audio + `.lrc`, preview the sync, the pipeline analyses the song, the admin fixes *unmatched* tokens and edits translations, then publishes. |
 | F11 | **Guest mode** | Play songs and tap words without an account. Sign-up is asked for only when saving a word. |
-| F12 | **Streak + daily goal** | Daily review goal (default 10) and a streak counter (section 5.3). |
+| F12 | **Streak + daily goal** | Daily review goal chosen as minutes per day (5/10/15/20 → 10/20/30/40 reviews; default 10) and a streak counter (section 5.3). |
 | F13 | **Privacy controls** | Self-service account deletion and JSON data export; Impressum and Datenschutzerklärung pages. |
 
 ### Out of scope for the MVP
@@ -72,10 +72,11 @@ English (UI and translations) → German. The data model leaves room for more pa
 
 ### 5.1 First visit (guest) and sign-up
 ```
-Landing → "Start listening" → Choose your level (stored in the browser)
-→ Library on that level tab → play songs, tap words (no account needed)
-→ "Save to review" → Sign up (email + password) → email verification mail sent
-→ guest level + completions are merged into the new learner → the pending save completes
+Landing → "Start listening" → Onboarding (stored in the browser):
+   name (optional) → level → why German (several, optional) → daily minutes (optional)
+→ Home: "Welcome, Anas" + songs for that level → play songs, tap words (no account needed)
+→ "Save to review" → Sign up (email + password, name prefilled) → email verification mail sent
+→ onboarding answers + completions are merged into the new learner → the pending save completes
 ```
 
 ### 5.2 Learn with a song (core loop)
@@ -117,19 +118,22 @@ A day counts toward the *streak* (learner's timezone) when the daily goal is met
 ## 6. Frontend (`web/`)
 
 ### 6.1 Stack
-Next.js (App Router) + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom sheet), TanStack Query. Vitest + Testing Library; Playwright for one or two end-to-end happy paths. **Mobile first.** Served from the VPS as a standalone Node server.
+Next.js API on vinext + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom sheet), TanStack Query, Motion (animation), Lucide icons, self-hosted fonts. Vitest + Testing Library; Playwright for one or two end-to-end happy paths. **Mobile first.** Deployed to Cloudflare Workers (ADR-0012, written in FE-3.3).
+
+Look, feel and motion: [DESIGN.md](../DESIGN.md). Users, voice and onboarding: [PRODUCT.md](../PRODUCT.md). Ticket order: [FRONTEND_ROADMAP.md](FRONTEND_ROADMAP.md).
 
 ### 6.2 Routes
 | Route | Purpose |
 |-------|---------|
 | `/` | Landing |
 | `/signup`, `/login`, `/verify-email`, `/reset-password` | Auth |
-| `/onboarding/level` | Pick a level (guest or learner) |
+| `/onboarding` | Four steps: name, level, why German, daily minutes (guest or learner) |
+| `/home` | Welcome, continue listening, reviews due, songs for your level, recently added |
 | `/songs` | Library with level tabs (`?level=A1`) |
 | `/songs/[slug]` | Player + lyrics |
 | `/review` | Review session |
 | `/vocabulary` | Saved words (search, delete) |
-| `/settings` | Level, daily goal, timezone, playback defaults, gender colours, export, delete account |
+| `/settings` | Display name, level, learning reasons, daily goal, timezone, playback defaults, gender colours, export, delete account |
 | `/impressum`, `/datenschutz` | Legal pages |
 | `/admin/songs`, `/admin/songs/new`, `/admin/songs/[id]/tokens` | Admin |
 
@@ -138,7 +142,7 @@ Next.js (App Router) + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom she
 - `LyricLine`: active / past / upcoming states, optional translation row.
 - `WordToken`: a `<button>` per token (touch, mouse, keyboard); gender colour + marker; highlights its partner.
 - `WordCard`: Popover at ≥ 768 px, Vaul bottom sheet below.
-- `PlayerControls`, `LevelTabs`, `SongCard`, `ReviewCard`, `ReviewRatingBar`, `StreakBadge`.
+- `PlayerControls` with `PlayButton` (morphing) and `WaveTimeline`, `LevelTabs`, `SongCard`, `Cover` (uploaded or generated), `OptionCard`, `AccountBlock`, `ReviewCard`, `ReviewRatingBar`, `StreakBadge`.
 
 ### 6.4 Player behaviour
 - **Sync:** read `audio.currentTime` in `requestAnimationFrame` and find the active line by binary search over start times.
@@ -154,7 +158,7 @@ Next.js (App Router) + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom she
 Three colours that pass WCAG AA on the background, each with an `m`/`f`/`n` marker. Only nouns are coloured; plurals use their singular's gender. Legend in the player header; can be turned off in settings.
 
 ### 6.6 Guest data
-Level, completions and a pending save live in `localStorage`. On sign-up the web app sends them once to the backend to merge, then clears them. Guests have no server-side data.
+Onboarding answers (display name, level, learning reasons, daily goal), completions and a pending save live in `localStorage`. On sign-up the web app sends them once to the backend to merge, then clears them. Guests have no server-side data.
 
 ---
 
@@ -201,9 +205,9 @@ POST /api/admin/songs (multipart)
 | `POST /api/auth/signup`, `/login`, `/refresh`, `/logout` | identity | Cookies: short access token, rotating refresh token |
 | `POST /api/auth/verify-email`, `/password/forgot`, `/password/reset` | identity | Mails via Resend |
 | `DELETE /api/auth/account` | identity | Emits `AccountDeleted` |
-| `GET /api/songs?level=A1&page=` | backend | Published songs only; cacheable (section 7.7) |
-| `GET /api/songs/{slug}` | backend | Song + lines + tokens with meanings embedded, plus `audioUrl` (public CDN URL); `ETag` from the song version |
-| `GET`, `PATCH /api/me/learner` | backend | Level, daily goal, timezone, settings |
+| `GET /api/songs?level=A1&page=` | backend | Published songs only, each with `coverUrl`; cacheable (section 7.7) |
+| `GET /api/songs/{slug}` | backend | Song + lines + tokens with meanings embedded, plus `audioUrl` and `coverUrl` (public CDN URLs; `coverUrl` empty when the song uses generated artwork); `ETag` from the song version |
+| `GET`, `PATCH /api/me/learner` | backend | Display name, level, learning reasons, daily goal, timezone, settings |
 | `POST /api/me/guest-import` | backend | Merge guest data once after sign-up |
 | `GET /api/me/export` | backend | GDPR JSON export |
 | `POST /api/vocab` | backend | `{ tokenId }`: server derives entry, song and line; adds a sighting if already saved |
@@ -257,7 +261,7 @@ No Redis while there's a single backend instance; no Hibernate second-level cach
 **catalog**
 - `language` (code, name)
 - `artist` (id, name — unique, case-insensitive)
-- `song` (id, slug — unique, title, artist_id, language_code, cefr_level, duration_ms, status, version — bumped on every update, failure_reason — only when FAILED, license_type, license_note, audio_key (`audio/<sha256>.mp3`), cover_image_url, sync_granularity, created_at, published_at — only when PUBLISHED)
+- `song` (id, slug — unique, title, artist_id, language_code, cefr_level, duration_ms, status, version — bumped on every update, failure_reason — only when FAILED, license_type, license_note, audio_key (`audio/<sha256>.mp3`), cover_key (`cover/<sha256>.<ext>`, optional), cover_note (optional), sync_granularity, created_at, published_at — only when PUBLISHED)
 - `song_line` (id, song_id, line_index, raw_text, start_ms, end_ms > start_ms, is_instrumental, contextual_translation, cultural_note)
 - Every rule the domain enforces is also a database constraint, so a bug or a manual SQL fix can't store a song the code would refuse.
 - `token` (id, line_id, token_index, surface, lemma, pos, gender, morph, char_start, char_end, separable_lemma, partner_token_id, dictionary_entry_id, match_status)
@@ -267,7 +271,7 @@ No Redis while there's a single backend instance; no Hibernate second-level cach
 - `dictionary_form` (form, entry_id, tags)
 
 **learning**
-- `learner` (account_id, cefr_level, daily_goal, timezone, settings, created_at)
+- `learner` (account_id, display_name (optional, ≤ 30), cefr_level, learning_reasons (set of MOVING, WORK, STUDIES, CULTURE), daily_goal, timezone, settings, created_at)
 - `saved_word` (id, learner_id, dictionary_entry_id, created_at) — unique (learner_id, dictionary_entry_id)
 - `sighting` (id, saved_word_id, song_id, line_id, token_id, created_at) — unique (saved_word_id, line_id)
 - `review_state` (saved_word_id, due_at, stability, difficulty, state, reps, lapses, last_reviewed_at)
