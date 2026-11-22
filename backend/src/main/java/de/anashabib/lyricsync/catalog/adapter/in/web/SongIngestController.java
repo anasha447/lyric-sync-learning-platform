@@ -2,9 +2,9 @@ package de.anashabib.lyricsync.catalog.adapter.in.web;
 
 import de.anashabib.lyricsync.catalog.adapter.in.web.dto.IngestSongRequest;
 import de.anashabib.lyricsync.catalog.adapter.in.web.dto.ValidationErrorResponse;
-import de.anashabib.lyricsync.catalog.application.usecase.IngestResult;
-import de.anashabib.lyricsync.catalog.application.usecase.IngestSongCommand;
-import de.anashabib.lyricsync.catalog.application.usecase.IngestSongUseCase;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestSongCommand;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestSongUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

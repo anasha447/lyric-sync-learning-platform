@@ -1,5 +1,7 @@
 package de.anashabib.lyricsync.catalog.application.usecase;
 
+import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestSongCommand;
 import de.anashabib.lyricsync.catalog.application.port.out.ArtistRepositoryPort;
 import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
 import de.anashabib.lyricsync.catalog.application.port.out.SongRepositoryPort;
@@ -29,17 +31,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class IngestSongUseCaseTest {
+class IngestSongServiceTest {
 
     @Mock AudioStoragePort audioStoragePort;
     @Mock ArtistRepositoryPort artistRepositoryPort;
     @Mock SongRepositoryPort songRepositoryPort;
 
-    private IngestSongUseCase useCase;
+    private IngestSongService useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new IngestSongUseCase(
+        useCase = new IngestSongService(
                 new LrcTextDecoder(), new LrcParser(), new LrcValidator(), // real — pure, already tested
                 audioStoragePort, artistRepositoryPort, songRepositoryPort  // mocked — I/O boundaries
         );

@@ -1,4 +1,4 @@
-package de.anashabib.lyricsync.catalog.application.usecase;
+package de.anashabib.lyricsync.catalog.application.port.in;
 
 public record IngestSongCommand(
         byte[] audioBytes,

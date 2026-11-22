@@ -1,4 +1,4 @@
-package de.anashabib.lyricsync.catalog.application.usecase;
+package de.anashabib.lyricsync.catalog.application.port.in;
 
 import de.anashabib.lyricsync.catalog.domain.model.Song;
 import de.anashabib.lyricsync.catalog.domain.validation.ValidationError;
