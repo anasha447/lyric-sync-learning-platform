@@ -23,6 +23,7 @@ public class LrcValidator {
         validateLineCount(lines, durationMs, errors);
         validateTimestampBounds(lines, durationMs, errors);
         validateStrictlyIncreasing(lines, errors);
+        validateEndsAfterStart(lines, durationMs, errors);
 
         return errors;
     }
@@ -60,6 +61,17 @@ public class LrcValidator {
             if (line.startMs() > durationMs) {
                 errors.add(ValidationError.forLine(i,
                         "Start time " + line.startMs() + "ms exceeds track duration " + durationMs + "ms"));
+            }
+        }
+    }
+
+    private void validateEndsAfterStart(List<LrcLine> lines, long durationMs, List<ValidationError> errors) {
+        for (int i = 0; i < lines.size(); i++) {
+            LrcLine line = lines.get(i);
+            boolean alreadyReportedAsTooLate = line.startMs() > durationMs;
+            if (line.endMs() != null && line.endMs() <= line.startMs() && !alreadyReportedAsTooLate) {
+                errors.add(ValidationError.forLine(i, "Line starts at " + line.startMs() + "ms but ends at "
+                        + line.endMs() + "ms, so it does not end after it starts"));
             }
         }
     }

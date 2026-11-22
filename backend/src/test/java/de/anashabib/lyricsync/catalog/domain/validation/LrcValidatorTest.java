@@ -94,6 +94,31 @@ class LrcValidatorTest {
     }
 
     @Test
+    void flagsLineThatDoesNotEndAfterItStarts() {
+        // a last line that starts exactly when the track ends would be shown for 0 ms
+        ParsedLrc lrc = new ParsedLrc(Map.of(), List.of(
+                new LrcLine(10_000, 200_000, "First", false),
+                new LrcLine(200_000, 200_000, "Last", false)
+        ));
+        List<ValidationError> errors = validator.validate(lrc, Duration.ofSeconds(200));
+
+        assertThat(errors).hasSize(1);
+        assertThat(errors.getFirst().lineIndex()).isEqualTo(1);
+        assertThat(errors.getFirst().message()).contains("does not end after it starts");
+    }
+
+    @Test
+    void reportsALineStartingAfterTheTrackOnlyOnce() {
+        ParsedLrc lrc = new ParsedLrc(Map.of(), List.of(
+                new LrcLine(250_000, 200_000, "Too late", false)
+        ));
+        List<ValidationError> errors = validator.validate(lrc, Duration.ofSeconds(200));
+
+        assertThat(errors).hasSize(1);
+        assertThat(errors.getFirst().message()).contains("exceeds track duration");
+    }
+
+    @Test
     void acceptsSignedOffset() {
         ParsedLrc lrc = new ParsedLrc(Map.of("offset", "-250"), List.of(
                 new LrcLine(10_000, "Line")
