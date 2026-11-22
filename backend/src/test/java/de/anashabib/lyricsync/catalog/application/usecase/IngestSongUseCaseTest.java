@@ -88,6 +88,20 @@ class IngestSongUseCaseTest {
     }
 
     @Test
+    void nonNumericOffsetIsAValidationFailureNotACrash() {
+        IngestSongCommand command = new IngestSongCommand(
+                "audio".getBytes(), "song.mp3",
+                "[offset:abc]\n[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
+                "Test", "Artist", "A2", "public_domain", 20_000
+        );
+
+        IngestResult result = useCase.ingest(command);
+
+        assertThat(result).isInstanceOf(IngestResult.ValidationFailure.class);
+        verifyNoInteractions(audioStoragePort, songRepositoryPort);
+    }
+
+    @Test
     void rejectsRequestWithNeitherLrcFileNorPastedText() {
         IngestSongCommand command = new IngestSongCommand(
                 "audio".getBytes(), "song.mp3", null, null,

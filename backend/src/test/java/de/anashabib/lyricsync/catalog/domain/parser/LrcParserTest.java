@@ -5,6 +5,7 @@ import de.anashabib.lyricsync.catalog.domain.model.ParsedLrc;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 
@@ -44,20 +45,53 @@ class LrcParserTest {
         assertThat(result.lines()).hasSize(1);
     }
 
+    // LRC convention: a positive offset makes the lyrics appear sooner, a negative one later
     @Test
-    void appliesPositiveOffsetFromMetadataToAllTimestamps() {
+    void positiveOffsetShowsLyricsEarlier() {
         String lrc = "[offset:+250]\n[00:15.00]First line\n[00:20.00]Second line";
         ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
-        assertThat(result.lines().get(0).startMs()).isEqualTo(15_250);
-        assertThat(result.lines().get(1).startMs()).isEqualTo(20_250);
+        assertThat(result.lines().get(0).startMs()).isEqualTo(14_750);
+        assertThat(result.lines().get(1).startMs()).isEqualTo(19_750);
     }
 
     @Test
-    void appliesNegativeOffsetAndClampsAtZero() {
-        String lrc = "[offset:-500]\n[00:00.30]Too early to go negative\n[00:01.00]Second line";
+    void negativeOffsetShowsLyricsLater() {
+        String lrc = "[offset:-500]\n[00:15.00]First line";
+        ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(15_500);
+    }
+
+    @Test
+    void offsetClampsStartTimesAtZero() {
+        String lrc = "[offset:+500]\n[00:00.30]Too early to go negative\n[00:01.00]Second line";
         ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
         assertThat(result.lines().get(0).startMs()).isEqualTo(0);
         assertThat(result.lines().get(1).startMs()).isEqualTo(500);
+    }
+
+    @Test
+    void nonNumericOffsetIsLeftForTheValidator() {
+        ParsedLrc result = parser.parse("[offset:abc]\n[00:15.00]Line", Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(15_000);
+        assertThat(result.metadata()).containsEntry("offset", "abc");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"'+250', 250", "'-500', -500", "'0', 0", "' 120 ', 120"})
+    void readsSignedWholeMillisecondsAsOffset(String raw, int expectedMs) {
+        assertThat(LrcParser.offsetMs(raw)).hasValue(expectedMs);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"abc", "1.5", "250ms", "+-5", "99999999999"})
+    void rejectsAnythingElseAsOffset(String raw) {
+        assertThat(LrcParser.offsetMs(raw)).isEmpty();
+    }
+
+    @Test
+    void missingOrBlankOffsetMeansZero() {
+        assertThat(LrcParser.offsetMs(null)).hasValue(0);
+        assertThat(LrcParser.offsetMs(" ")).hasValue(0);
     }
 
     @Test
@@ -66,7 +100,36 @@ class LrcParserTest {
         assertThat(result.lines().getFirst().startMs()).isEqualTo(15_000);
     }
 
-    // --- NEW TESTS BELOW ---
+    @Test
+    void ignoresUtf8ByteOrderMark() {
+        ParsedLrc result = parser.parse("﻿[00:15.26]Sie ist ein Model", Duration.ofMinutes(5));
+        assertThat(result.lines()).hasSize(1);
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(15_260);
+        assertThat(result.lines().getFirst().text()).isEqualTo("Sie ist ein Model");
+    }
+
+    @Test
+    void keepsTextBeforeAMidLineTimestamp() {
+        // only the timestamps at the start of a line are line times; one in the middle is a word timing
+        ParsedLrc result = parser.parse("[00:10.00]Sie ist ein [00:12.00]Model", Duration.ofMinutes(5));
+        assertThat(result.lines()).hasSize(1);
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(10_000);
+        assertThat(result.lines().getFirst().text()).isEqualTo("Sie ist ein Model");
+    }
+
+    @Test
+    void stripsEnhancedLrcWordTags() {
+        String lrc = "[00:12.00]<00:12.00>Sie <00:12.40>ist <00:12.80>ein Model<00:14.00>";
+        ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(12_000);
+        assertThat(result.lines().getFirst().text()).isEqualTo("Sie ist ein Model");
+    }
+
+    @Test
+    void lineWithOnlyWordTagsIsInstrumental() {
+        ParsedLrc result = parser.parse("[01:20.00]<01:20.00> <01:21.00>", Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().instrumental()).isTrue();
+    }
 
     @Test
     void expandsRepeatedTimestampsIntoSeparateLines() {

@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-11-22 — BE-2.6: LRC parser fixes
+
+- `[offset:+N]` now shows lyrics N ms sooner, as in the LRC convention; it was applied the wrong way round
+- Only timestamps at the start of a line are line times; a `[mm:ss]` later in the line, and enhanced LRC `<mm:ss.xx>` word tags, are word timings and get dropped, so "Sie ist ein [00:12]Model" keeps all its words
+- UTF-8 BOM stripped before parsing. It used to slip through only because the old regex searched the whole line; with anchored timestamps it would have silently removed the first line
+- Non-numeric offset (`[offset:abc]`) is a file-level validation error (422) instead of a `NumberFormatException` (500)
+- Validator rejects a line that doesn't end after it starts (e.g. the last line starting exactly at the end of the track)
+- Broke / learned: the BE-1.1 entry lists word tags and BOM as handled, but no test covered them, and the word tags weren't stripped. Every fix here starts with a failing test
+
+**Branch:** `fix/BE-2.6-lrc-parser-fixes`
+
+---
+
 ## 2026-11-22 — BE-2.5: Architecture guard tests
 
 - `ModularityTest`: `ApplicationModules.verify()` plus a check that the catalog module is found at all, so verify can't pass on zero modules; writes module docs to `target/spring-modulith-docs`
