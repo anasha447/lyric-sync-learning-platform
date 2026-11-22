@@ -31,7 +31,7 @@ public class ArtistPersistenceAdapter implements ArtistRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Artist> findByName(String name) {
-        return jpaRepository.findByName(name).map(mapper::toDomain);
+    public Optional<Artist> findByNameIgnoringCase(String name) {
+        return jpaRepository.findByNameIgnoringCase(name).map(mapper::toDomain);
     }
 }

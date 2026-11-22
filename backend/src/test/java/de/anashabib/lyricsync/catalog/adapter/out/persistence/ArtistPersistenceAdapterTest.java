@@ -8,6 +8,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -15,6 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -29,6 +31,9 @@ class ArtistPersistenceAdapterTest {
     @Autowired
     ArtistPersistenceAdapter adapter;
 
+    @Autowired
+    ArtistJpaRepository jpaRepository; // to flush, so the INSERT actually reaches Postgres
+
     @Test
     void savesAndFindsArtistById() {
         Artist saved = adapter.save(new Artist(null, "Kraftwerk"));
@@ -38,11 +43,22 @@ class ArtistPersistenceAdapterTest {
     }
 
     @Test
-    void findsArtistByExactName() {
+    void findsArtistByNameIgnoringCase() {
         adapter.save(new Artist(null, "Rammstein"));
 
-        assertThat(adapter.findByName("Rammstein")).isPresent();
-        assertThat(adapter.findByName("rammstein")).isEmpty();
+        assertThat(adapter.findByNameIgnoringCase("Rammstein")).isPresent();
+        assertThat(adapter.findByNameIgnoringCase("rAMMSTEIN")).isPresent();
+        assertThat(adapter.findByNameIgnoringCase("Rammstei")).isEmpty();
+    }
+
+    @Test
+    void databaseRejectsASecondArtistThatDiffersOnlyInCase() {
+        adapter.save(new Artist(null, "Kraftwerk"));
+
+        adapter.save(new Artist(null, "KRAFTWERK"));
+
+        assertThatThrownBy(() -> jpaRepository.flush())
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

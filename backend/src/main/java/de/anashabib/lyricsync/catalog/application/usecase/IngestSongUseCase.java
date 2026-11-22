@@ -47,6 +47,9 @@ public class IngestSongUseCase {
         errors.addAll(lrcValidator.validate(parsed, duration));
 
         LicenseType licenseType = parseLicenseType(command.licenseType(), errors);
+        if (isBlank(command.artistName())) {
+            errors.add(ValidationError.fileLevel("Artist is required"));
+        }
 
         if (!errors.isEmpty()) {
             return new IngestResult.ValidationFailure(errors); // nothing saved — audio, artist, song, none of it
@@ -81,9 +84,8 @@ public class IngestSongUseCase {
     }
 
     private Artist resolveArtist(String artistName) {
-        // Same case-sensitivity caveat flagged in BE-1.5's test — "Kraftwerk" and
-        // "kraftwerk" would create two rows. Known, not a bug, revisit if it matters.
-        return artistRepositoryPort.findByName(artistName)
+        // "kraftwerk" finds the existing "Kraftwerk" instead of creating a second artist
+        return artistRepositoryPort.findByNameIgnoringCase(artistName.strip())
                 .orElseGet(() -> artistRepositoryPort.save(new Artist(null, artistName)));
     }
 

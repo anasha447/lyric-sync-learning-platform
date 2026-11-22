@@ -43,7 +43,7 @@ class IngestSongUseCaseTest {
     @Test
     void savesAValidSongAndReturnsSuccess() {
         when(audioStoragePort.store(any(), any())).thenReturn("stored/song.mp3");
-        when(artistRepositoryPort.findByName("Traditional")).thenReturn(Optional.empty());
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional")).thenReturn(Optional.empty());
         when(artistRepositoryPort.save(any())).thenAnswer(inv ->
                 new Artist(UUID.randomUUID(), inv.<Artist>getArgument(0).name()));
         when(songRepositoryPort.save(any())).thenAnswer(inv -> {
@@ -63,7 +63,7 @@ class IngestSongUseCaseTest {
 
     @Test
     void reusesAnExistingArtistInsteadOfCreatingADuplicate() {
-        when(artistRepositoryPort.findByName("Traditional"))
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
                 .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
         when(audioStoragePort.store(any(), any())).thenReturn("ref");
         when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -71,6 +71,26 @@ class IngestSongUseCaseTest {
         useCase.ingest(validCommand("Traditional"));
 
         verify(artistRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void looksUpTheArtistWithoutSurroundingSpaces() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Kraftwerk"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Kraftwerk")));
+        when(audioStoragePort.store(any(), any())).thenReturn("ref");
+        when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        useCase.ingest(validCommand("  Kraftwerk "));
+
+        verify(artistRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void blankArtistIsAValidationFailureNotACrash() {
+        IngestResult result = useCase.ingest(validCommand("   "));
+
+        assertThat(result).isInstanceOf(IngestResult.ValidationFailure.class);
+        verifyNoInteractions(audioStoragePort, songRepositoryPort);
     }
 
     @Test
