@@ -55,9 +55,10 @@ public class IngestSongUseCase {
             return new IngestResult.ValidationFailure(errors); // nothing saved — audio, artist, song, none of it
         }
 
-        String audioRef = audioStoragePort.store(command.audioFilename(), command.audioBytes());
+        AudioKey audioKey = AudioKey.ofMp3(command.audioBytes());
+        audioStoragePort.store(audioKey, command.audioBytes());
         UUID artistId = resolveArtist(command.artistName()).id();
-        Song song = buildSong(command, parsed, duration, licenseType, audioRef, artistId);
+        Song song = buildSong(command, parsed, duration, licenseType, audioKey, artistId);
 
         return new IngestResult.Success(songRepositoryPort.save(song));
     }
@@ -90,7 +91,7 @@ public class IngestSongUseCase {
     }
 
     private Song buildSong(IngestSongCommand command, ParsedLrc parsed, Duration duration,
-                           LicenseType licenseType, String audioRef, UUID artistId) {
+                           LicenseType licenseType, AudioKey audioKey, UUID artistId) {
         List<SongLine> lines = IntStream.range(0, parsed.lines().size())
                 .mapToObj(i -> {
                     LrcLine line = parsed.lines().get(i);
@@ -101,7 +102,7 @@ public class IngestSongUseCase {
 
         return new Song(
                 null, command.title(), artistId, "de", command.cefrLevel(),
-                (int) duration.toMillis(), licenseType, audioRef, null,
+                (int) duration.toMillis(), licenseType, audioKey, null,
                 SyncGranularity.LINE, lines, null
         );
     }

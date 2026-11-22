@@ -47,8 +47,8 @@ public class SongEntity {
     @Column(name = "license_type", nullable = false)
     private LicenseType licenseType; // converted by LicenseTypeConverter, autoApply
 
-    @Column(name = "audio_source_ref", nullable = false)
-    private String audioSourceRef;
+    @Column(name = "audio_key", nullable = false)
+    private String audioKey;
 
     @Column(name = "cover_image_url")
     private String coverImageUrl;

@@ -1,13 +1,13 @@
 package de.anashabib.lyricsync.catalog.adapter.out.storage;
 
 import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
+import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 
 @Component
 public class LocalFilesystemAudioStorageAdapter implements AudioStoragePort {
@@ -15,27 +15,24 @@ public class LocalFilesystemAudioStorageAdapter implements AudioStoragePort {
     private final Path storageRoot;
 
     public LocalFilesystemAudioStorageAdapter(@Value("${app.storage.audio-root}") String audioRoot) {
-        this.storageRoot = Path.of(audioRoot);
+        this.storageRoot = Path.of(audioRoot).toAbsolutePath().normalize();
     }
 
     @Override
-    public String store(String originalFilename, byte[] audioBytes) {
-        try {
-            Files.createDirectories(storageRoot);
-            String storedFilename = UUID.randomUUID() + "-" + sanitize(originalFilename);
-            Files.write(storageRoot.resolve(storedFilename), audioBytes);
-            return storedFilename;
-        } catch (IOException e) {
-            throw new AudioStorageException("Failed to store audio file: " + originalFilename, e);
+    public void store(AudioKey key, byte[] audioBytes) {
+        // AudioKey already refuses "..", this is a second lock on the same door
+        Path target = storageRoot.resolve(key.value()).normalize();
+        if (!target.startsWith(storageRoot)) {
+            throw new AudioStorageException("Audio key points outside the storage root: " + key.value(), null);
         }
-    }
-
-    private String sanitize(String filename) {
-        // Treat the filename like a note handed to you by a stranger: never follow
-        // its directions. Path.of(...).getFileName() strips any "../" navigation
-        // before we even look at the characters; the regex then removes anything
-        // that isn't a plain, boring filename character.
-        String base = Path.of(filename).getFileName().toString();
-        return base.replaceAll("[^a-zA-Z0-9.\\-_]", "_");
+        if (Files.exists(target)) {
+            return; // the key is the content hash, so the file is already there
+        }
+        try {
+            Files.createDirectories(target.getParent());
+            Files.write(target, audioBytes);
+        } catch (IOException e) {
+            throw new AudioStorageException("Failed to store audio file: " + key.value(), e);
+        }
     }
 }

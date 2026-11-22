@@ -12,7 +12,7 @@ public record Song(
         String cefrLevel,
         int durationMs,
         LicenseType licenseType,
-        String audioSourceRef,
+        AudioKey audioKey,
         String coverImageUrl,
         SyncGranularity syncGranularity,
         List<SongLine> lines,

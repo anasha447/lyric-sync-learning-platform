@@ -46,7 +46,7 @@ class FlywayMigrationIntegrationTest {
     void rejectsSongWithUnknownLanguageCode() {
         UUID artistId = seedLanguageAndArtist();
         assertThatThrownBy(() -> jdbcTemplate.update("""
-            INSERT INTO catalog.song (id, title, artist_id, language_code, duration_ms, license_type, audio_source_ref)
+            INSERT INTO catalog.song (id, title, artist_id, language_code, duration_ms, license_type, audio_key)
             VALUES (gen_random_uuid(), 'Test Song', ?, 'xx', 180000, 'original', 'test/path')
             """, artistId))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -56,7 +56,7 @@ class FlywayMigrationIntegrationTest {
     void rejectsInvalidLicenseType() {
         UUID artistId = seedLanguageAndArtist();
         assertThatThrownBy(() -> jdbcTemplate.update("""
-            INSERT INTO catalog.song (id, title, artist_id, language_code, duration_ms, license_type, audio_source_ref)
+            INSERT INTO catalog.song (id, title, artist_id, language_code, duration_ms, license_type, audio_key)
             VALUES (gen_random_uuid(), 'Test Song', ?, 'de', 180000, 'stolen', 'test/path')
             """, artistId))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -113,7 +113,7 @@ class FlywayMigrationIntegrationTest {
         UUID artistId = seedLanguageAndArtist();
         UUID songId = UUID.randomUUID();
         jdbcTemplate.update("""
-            INSERT INTO catalog.song (id, title, artist_id, language_code, duration_ms, license_type, audio_source_ref)
+            INSERT INTO catalog.song (id, title, artist_id, language_code, duration_ms, license_type, audio_key)
             VALUES (?, 'Test Song', ?, 'de', 180000, 'original', 'test/path')
             """, songId, artistId);
         return songId;

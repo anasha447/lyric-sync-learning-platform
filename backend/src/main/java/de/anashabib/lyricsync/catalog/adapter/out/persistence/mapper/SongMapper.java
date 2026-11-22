@@ -2,6 +2,7 @@ package de.anashabib.lyricsync.catalog.adapter.out.persistence.mapper;
 
 import de.anashabib.lyricsync.catalog.adapter.out.persistence.entity.SongEntity;
 import de.anashabib.lyricsync.catalog.adapter.out.persistence.entity.SongLineEntity;
+import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
 import de.anashabib.lyricsync.catalog.domain.model.Song;
 import de.anashabib.lyricsync.catalog.domain.model.SongLine;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class SongMapper {
         entity.setCefrLevel(song.cefrLevel());
         entity.setDurationMs(song.durationMs());
         entity.setLicenseType(song.licenseType());
-        entity.setAudioSourceRef(song.audioSourceRef());
+        entity.setAudioKey(song.audioKey().value());
         entity.setCoverImageUrl(song.coverImageUrl());
         entity.setSyncGranularity(song.syncGranularity());
 
@@ -57,7 +58,7 @@ public class SongMapper {
         return new Song(
                 entity.getId(), entity.getTitle(), entity.getArtistId(), entity.getLanguageCode(),
                 entity.getCefrLevel(), entity.getDurationMs(), entity.getLicenseType(),
-                entity.getAudioSourceRef(), entity.getCoverImageUrl(), entity.getSyncGranularity(),
+                new AudioKey(entity.getAudioKey()), entity.getCoverImageUrl(), entity.getSyncGranularity(),
                 lines, entity.getCreatedAt()
         );
     }

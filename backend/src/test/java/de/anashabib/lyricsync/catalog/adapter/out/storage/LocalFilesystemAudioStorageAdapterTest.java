@@ -1,5 +1,6 @@
 package de.anashabib.lyricsync.catalog.adapter.out.storage;
 
+import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -22,27 +23,25 @@ class LocalFilesystemAudioStorageAdapterTest {
     }
 
     @Test
-    void storesFileAndReturnsARetrievableReference() throws IOException {
+    void storesTheFileUnderItsKey() throws IOException {
         byte[] audio = "fake audio bytes".getBytes();
+        AudioKey key = AudioKey.ofMp3(audio);
 
-        String ref = adapter.store("song.mp3", audio);
+        adapter.store(key, audio);
 
-        assertThat(Files.readAllBytes(tempDir.resolve(ref))).isEqualTo(audio);
+        assertThat(Files.readAllBytes(tempDir.resolve(key.value()))).isEqualTo(audio);
     }
 
     @Test
-    void sanitizesPathTraversalAttemptsInFilename() {
-        String ref = adapter.store("../../../etc/passwd", "harmless".getBytes());
+    void storingTheSameFileAgainKeepsOneCopy() throws IOException {
+        byte[] audio = "same song uploaded twice".getBytes();
+        AudioKey key = AudioKey.ofMp3(audio);
 
-        assertThat(ref).doesNotContain("..");
-        assertThat(tempDir.resolve(ref)).exists(); // landed inside tempDir, didn't escape it
-    }
+        adapter.store(key, audio);
+        adapter.store(key, audio);
 
-    @Test
-    void twoUploadsWithTheSameOriginalFilenameDoNotCollide() {
-        String ref1 = adapter.store("song.mp3", "first".getBytes());
-        String ref2 = adapter.store("song.mp3", "second".getBytes());
-
-        assertThat(ref1).isNotEqualTo(ref2); // the UUID prefix guarantees this
+        try (var files = Files.walk(tempDir)) {
+            assertThat(files.filter(Files::isRegularFile)).hasSize(1);
+        }
     }
 }
