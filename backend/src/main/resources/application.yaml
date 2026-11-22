@@ -43,3 +43,5 @@ springdoc:
 app:
   storage:
     audio-root: ${AUDIO_STORAGE_ROOT:./data/audio}
+    # where browsers fetch audio from; BE-3.1 points it at the R2 custom domain behind Cloudflare
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL:http://localhost/media}
