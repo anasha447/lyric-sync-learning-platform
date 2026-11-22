@@ -105,7 +105,7 @@ A day counts toward the *streak* (learner's timezone) when the daily goal is met
 /admin/songs/new
   → audio (MP3 ≤ 20 MB) + .lrc file or pasted text + title, artist, level, license + license note
   → sync preview: play the audio with lines highlighting; duration read from the file
-  → Submit → PROCESSING
+  → Submit → PROCESSING   (DRAFT until the analysis pipeline exists, BE-4.4)
   → pipeline (section 7.4): parse → NLP → dictionary linking → line translation
   → READY_FOR_REVIEW (or FAILED with the reason)
   → /admin/songs/{id}/tokens: fix unmatched tokens, edit line translations
@@ -253,9 +253,11 @@ No Redis while there's a single backend instance; no Hibernate second-level cach
 ## 8. Data model
 
 **catalog**
+- `language` (code, name)
 - `artist` (id, name — unique, case-insensitive)
-- `song` (id, slug, title, artist_id, language_code, cefr_level, duration_ms, status, version, failure_reason, license_type, license_note, audio_key (SHA-256 of the file), cover_image_url, sync_granularity, created_at, published_at)
-- `song_line` (id, song_id, line_index, raw_text, start_ms, end_ms, is_instrumental, contextual_translation, cultural_note)
+- `song` (id, slug — unique, title, artist_id, language_code, cefr_level, duration_ms, status, version — bumped on every update, failure_reason — only when FAILED, license_type, license_note, audio_key (`audio/<sha256>.mp3`), cover_image_url, sync_granularity, created_at, published_at — only when PUBLISHED)
+- `song_line` (id, song_id, line_index, raw_text, start_ms, end_ms > start_ms, is_instrumental, contextual_translation, cultural_note)
+- Every rule the domain enforces is also a database constraint, so a bug or a manual SQL fix can't store a song the code would refuse.
 - `token` (id, line_id, token_index, surface, lemma, pos, gender, morph, char_start, char_end, separable_lemma, partner_token_id, dictionary_entry_id, match_status)
 
 **dictionary**

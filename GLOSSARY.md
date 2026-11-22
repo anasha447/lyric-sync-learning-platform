@@ -30,6 +30,9 @@ _Avoid_: Import, upload (upload is only the transfer)
 **Song status**:
 Where a song is in its lifecycle: Draft, Processing, Ready for review, Published or Failed.
 
+**Draft**:
+A song that is stored but not yet sent for analysis.
+
 **Ready for review**:
 A song whose analysis finished and which waits for an admin to resolve unmatched tokens.
 
