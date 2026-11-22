@@ -1,7 +1,7 @@
 package de.anashabib.lyricsync.catalog.adapter.in.web;
 
-import de.anashabib.lyricsync.catalog.application.usecase.IngestResult;
-import de.anashabib.lyricsync.catalog.application.usecase.IngestSongUseCase;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestSongUseCase;
 import de.anashabib.lyricsync.catalog.domain.model.*;
 import de.anashabib.lyricsync.catalog.domain.validation.ValidationError;
 import org.junit.jupiter.api.Test;

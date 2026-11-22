@@ -1,5 +1,8 @@
 package de.anashabib.lyricsync.catalog.application.usecase;
 
+import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestSongCommand;
+import de.anashabib.lyricsync.catalog.application.port.in.IngestSongUseCase;
 import de.anashabib.lyricsync.catalog.application.port.out.ArtistRepositoryPort;
 import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
 import de.anashabib.lyricsync.catalog.application.port.out.SongRepositoryPort;
@@ -20,7 +23,7 @@ import java.util.stream.IntStream;
 
 @Component
 @RequiredArgsConstructor
-public class IngestSongUseCase {
+public class IngestSongService implements IngestSongUseCase {
 
     private final LrcTextDecoder lrcTextDecoder;
     private final LrcParser lrcParser;
@@ -29,6 +32,7 @@ public class IngestSongUseCase {
     private final ArtistRepositoryPort artistRepositoryPort;
     private final SongRepositoryPort songRepositoryPort;
 
+    @Override
     public IngestResult ingest(IngestSongCommand command) {
         List<ValidationError> errors = new ArrayList<>();
 
