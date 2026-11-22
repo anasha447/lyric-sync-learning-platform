@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-11-22 — BE-3.1: R2 audio storage
+
+- `R2AudioStorageAdapter` behind the existing `AudioStoragePort`: AWS SDK v2 S3 client against R2's S3 API (`region=auto`, path-style, JDK HTTP client; Netty and Apache excluded)
+- Objects stored as `audio/<sha256>.mp3` with `Content-Type: audio/mpeg` and `Cache-Control: public, max-age=31536000, immutable`; a known hash isn't uploaded again
+- Newer SDKs send CRC checksums by default that R2 rejects; checksums only "when required"
+- `STORAGE_TYPE=local|r2` chooses the adapter; locally the backend serves `/media/**` with the same cache header and range requests (206), routed by Traefik
+- Tests: S3Mock (Adobe) in a Testcontainer instead of MinIO, which stopped publishing images in 2025; the Docker mirror on the dev PC returned 502 for it
+- R2 itself still has to be enabled in the Cloudflare dashboard (the API answers "Please enable R2"), so real R2 is tried once the owner has done that
+
+**Branch:** `feature/BE-3.1-r2-audio-storage`
+
+---
+
 ## 2026-11-22 — BE-3.2: Public song API with caching
 
 - `GET /api/songs?level=&page=` (published only, by title, 20 per page) and `GET /api/songs/{slug}` (lines + `audioUrl`)
