@@ -54,11 +54,12 @@ public class LrcParser {
             }
         }
 
+        // [offset:+N] means "show the lyrics N ms sooner", so it's subtracted
         int offsetMs = parseOffset(metadata.get("offset"));
 
         List<LrcLine> shiftedLines = lines.stream()
-                .map(line -> line.shiftedBy(offsetMs))
-                .sorted(Comparator.comparingInt(LrcLine::startMs)) // <-- ADD THIS LINE
+                .map(line -> line.shiftedBy(-offsetMs))
+                .sorted(Comparator.comparingInt(LrcLine::startMs))
                 .toList();
 
         List<LrcLine> finalLines = new ArrayList<>();

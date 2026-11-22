@@ -44,17 +44,25 @@ class LrcParserTest {
         assertThat(result.lines()).hasSize(1);
     }
 
+    // LRC convention: a positive offset makes the lyrics appear sooner, a negative one later
     @Test
-    void appliesPositiveOffsetFromMetadataToAllTimestamps() {
+    void positiveOffsetShowsLyricsEarlier() {
         String lrc = "[offset:+250]\n[00:15.00]First line\n[00:20.00]Second line";
         ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
-        assertThat(result.lines().get(0).startMs()).isEqualTo(15_250);
-        assertThat(result.lines().get(1).startMs()).isEqualTo(20_250);
+        assertThat(result.lines().get(0).startMs()).isEqualTo(14_750);
+        assertThat(result.lines().get(1).startMs()).isEqualTo(19_750);
     }
 
     @Test
-    void appliesNegativeOffsetAndClampsAtZero() {
-        String lrc = "[offset:-500]\n[00:00.30]Too early to go negative\n[00:01.00]Second line";
+    void negativeOffsetShowsLyricsLater() {
+        String lrc = "[offset:-500]\n[00:15.00]First line";
+        ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(15_500);
+    }
+
+    @Test
+    void offsetClampsStartTimesAtZero() {
+        String lrc = "[offset:+500]\n[00:00.30]Too early to go negative\n[00:01.00]Second line";
         ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
         assertThat(result.lines().get(0).startMs()).isEqualTo(0);
         assertThat(result.lines().get(1).startMs()).isEqualTo(500);
