@@ -1,5 +1,6 @@
 package de.anashabib.lyricsync.catalog.domain.model;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +18,14 @@ public final class TestSongs {
                 Slug.fromTitle("Das Model"), "Das Model", artistId, CefrLevel.B1, 218_000,
                 LicenseType.WRITTEN_PERMISSION, "Permission from the label, 2026-11-01",
                 new AudioKey("audio/das-model.mp3"), lines);
+    }
+
+    /** The song as the repository hands it back: with an id, version 0 and a creation time. */
+    public static Song saved(Song s) {
+        return new Song(UUID.randomUUID(), s.slug(), s.title(), s.artistId(), s.languageCode(), s.cefrLevel(),
+                s.durationMs(), s.status(), s.failureReason(), s.licenseType(), s.licenseNote(), s.audioKey(),
+                s.coverImageUrl(), s.syncGranularity(), s.lines(), 0L, Instant.parse("2026-11-22T10:00:00Z"),
+                s.publishedAt());
     }
 
     public static SongLine line(int index, int startMs, int endMs, String text) {

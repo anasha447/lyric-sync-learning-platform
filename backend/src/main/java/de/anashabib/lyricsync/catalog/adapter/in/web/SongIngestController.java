@@ -1,20 +1,20 @@
 package de.anashabib.lyricsync.catalog.adapter.in.web;
 
 import de.anashabib.lyricsync.catalog.adapter.in.web.dto.IngestSongRequest;
-import de.anashabib.lyricsync.catalog.adapter.in.web.dto.ValidationErrorResponse;
+import de.anashabib.lyricsync.catalog.adapter.in.web.dto.SongResponse;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestSongCommand;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestSongUseCase;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.net.URI;
 
 @RestController
-@RequestMapping("/api/content/admin/songs")
+@RequestMapping("/api/admin/songs")
 @RequiredArgsConstructor
 public class SongIngestController {
 
@@ -25,10 +25,12 @@ public class SongIngestController {
         IngestResult result = ingestSongUseCase.ingest(toCommand(request));
 
         return switch (result) { // exhaustive — sealed interface, no default needed
-            case IngestResult.Success success ->
-                    ResponseEntity.status(HttpStatus.CREATED).body(success.song());
+            case IngestResult.Success success -> ResponseEntity
+                    // relative, so it stays right behind Traefik and, later, HTTPS
+                    .created(URI.create("/api/admin/songs/" + success.song().id()))
+                    .body(SongResponse.from(success.song()));
             case IngestResult.ValidationFailure failure ->
-                    ResponseEntity.unprocessableEntity().body(new ValidationErrorResponse(failure.errors()));
+                    ResponseEntity.of(ApiExceptionHandler.songRejected(failure.errors())).build();
         };
     }
 
