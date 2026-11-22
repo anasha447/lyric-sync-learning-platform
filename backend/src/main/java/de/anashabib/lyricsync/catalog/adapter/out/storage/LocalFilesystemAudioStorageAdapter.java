@@ -20,20 +20,35 @@ public class LocalFilesystemAudioStorageAdapter implements AudioStoragePort {
     }
 
     @Override
-    public void store(AudioKey key, byte[] audioBytes) {
+    public boolean store(AudioKey key, byte[] audioBytes) {
+        Path target = pathOf(key);
+        if (Files.exists(target)) {
+            return false; // the key is the content hash, so the file is already there
+        }
+        try {
+            Files.createDirectories(target.getParent());
+            Files.write(target, audioBytes);
+            return true;
+        } catch (IOException e) {
+            throw new AudioStorageException("Failed to store audio file: " + key.value(), e);
+        }
+    }
+
+    @Override
+    public void delete(AudioKey key) {
+        try {
+            Files.deleteIfExists(pathOf(key));
+        } catch (IOException e) {
+            throw new AudioStorageException("Failed to delete audio file: " + key.value(), e);
+        }
+    }
+
+    private Path pathOf(AudioKey key) {
         // AudioKey already refuses "..", this is a second lock on the same door
         Path target = storageRoot.resolve(key.value()).normalize();
         if (!target.startsWith(storageRoot)) {
             throw new AudioStorageException("Audio key points outside the storage root: " + key.value(), null);
         }
-        if (Files.exists(target)) {
-            return; // the key is the content hash, so the file is already there
-        }
-        try {
-            Files.createDirectories(target.getParent());
-            Files.write(target, audioBytes);
-        } catch (IOException e) {
-            throw new AudioStorageException("Failed to store audio file: " + key.value(), e);
-        }
+        return target;
     }
 }
