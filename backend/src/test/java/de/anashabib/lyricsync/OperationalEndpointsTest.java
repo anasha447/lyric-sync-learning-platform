@@ -47,7 +47,7 @@ class OperationalEndpointsTest {
     void openApiDescribesTheIngestionEndpoint() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/api/content/admin/songs'].post").exists());
+                .andExpect(jsonPath("$.paths['/api/admin/songs'].post").exists());
     }
 
     @Test
