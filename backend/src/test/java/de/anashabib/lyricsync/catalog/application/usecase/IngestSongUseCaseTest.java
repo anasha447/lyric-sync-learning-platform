@@ -5,6 +5,7 @@ import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
 import de.anashabib.lyricsync.catalog.application.port.out.SongRepositoryPort;
 import de.anashabib.lyricsync.catalog.domain.encoding.LrcTextDecoder;
 import de.anashabib.lyricsync.catalog.domain.model.Artist;
+import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
 import de.anashabib.lyricsync.catalog.domain.model.Song;
 import de.anashabib.lyricsync.catalog.domain.parser.LrcParser;
 import de.anashabib.lyricsync.catalog.domain.validation.LrcValidator;
@@ -42,14 +43,13 @@ class IngestSongUseCaseTest {
 
     @Test
     void savesAValidSongAndReturnsSuccess() {
-        when(audioStoragePort.store(any(), any())).thenReturn("stored/song.mp3");
         when(artistRepositoryPort.findByNameIgnoringCase("Traditional")).thenReturn(Optional.empty());
         when(artistRepositoryPort.save(any())).thenAnswer(inv ->
                 new Artist(UUID.randomUUID(), inv.<Artist>getArgument(0).name()));
         when(songRepositoryPort.save(any())).thenAnswer(inv -> {
             Song s = inv.getArgument(0);
             return new Song(UUID.randomUUID(), s.title(), s.artistId(), s.languageCode(), s.cefrLevel(),
-                    s.durationMs(), s.licenseType(), s.audioSourceRef(), s.coverImageUrl(),
+                    s.durationMs(), s.licenseType(), s.audioKey(), s.coverImageUrl(),
                     s.syncGranularity(), s.lines(), Instant.now());
         });
 
@@ -62,10 +62,23 @@ class IngestSongUseCaseTest {
     }
 
     @Test
+    void storesTheAudioUnderItsContentHash() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
+        when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        IngestSongCommand command = validCommand("Traditional");
+
+        Song saved = ((IngestResult.Success) useCase.ingest(command)).song();
+
+        AudioKey expected = AudioKey.ofMp3(command.audioBytes());
+        verify(audioStoragePort).store(expected, command.audioBytes());
+        assertThat(saved.audioKey()).isEqualTo(expected);
+    }
+
+    @Test
     void reusesAnExistingArtistInsteadOfCreatingADuplicate() {
         when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
                 .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
-        when(audioStoragePort.store(any(), any())).thenReturn("ref");
         when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         useCase.ingest(validCommand("Traditional"));
@@ -77,7 +90,6 @@ class IngestSongUseCaseTest {
     void looksUpTheArtistWithoutSurroundingSpaces() {
         when(artistRepositoryPort.findByNameIgnoringCase("Kraftwerk"))
                 .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Kraftwerk")));
-        when(audioStoragePort.store(any(), any())).thenReturn("ref");
         when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         useCase.ingest(validCommand("  Kraftwerk "));

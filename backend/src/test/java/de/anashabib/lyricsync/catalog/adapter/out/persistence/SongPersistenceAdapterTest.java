@@ -69,7 +69,7 @@ class SongPersistenceAdapterTest {
         Song updated = new Song(
                 original.id(), original.title(), original.artistId(), original.languageCode(),
                 original.cefrLevel(), original.durationMs(), original.licenseType(),
-                original.audioSourceRef(), original.coverImageUrl(), original.syncGranularity(),
+                original.audioKey(), original.coverImageUrl(), original.syncGranularity(),
                 List.of(original.lines().getFirst()), original.createdAt()
         );
 
@@ -85,7 +85,7 @@ class SongPersistenceAdapterTest {
 
         Song song = new Song(
                 null, "Test", artistId, "xx", null, 180_000,
-                LicenseType.ORIGINAL, "storage/test.mp3", null, SyncGranularity.LINE, List.of(), null
+                LicenseType.ORIGINAL, new AudioKey("storage/test.mp3"), null, SyncGranularity.LINE, List.of(), null
         );
 
         // We queue the save in memory...
@@ -99,7 +99,7 @@ class SongPersistenceAdapterTest {
     private Song songWith(UUID artistId, List<SongLine> lines) {
         return new Song(
                 null, "Das Model", artistId, "de", "B1", 218_000,
-                LicenseType.LICENSED, "storage/das-model.mp3", null, SyncGranularity.LINE, lines, null
+                LicenseType.LICENSED, new AudioKey("storage/das-model.mp3"), null, SyncGranularity.LINE, lines, null
         );
     }
 }

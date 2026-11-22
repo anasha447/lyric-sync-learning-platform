@@ -18,7 +18,7 @@ class SongMapperTest {
     void roundTripsASongWithItsLinesPreservingFieldsAndOrder() {
         Song song = new Song(
                 null, "Das Model", UUID.randomUUID(), "de", "B1", 218_000,
-                LicenseType.LICENSED, "storage/das-model.mp3", null, SyncGranularity.LINE,
+                LicenseType.LICENSED, new AudioKey("storage/das-model.mp3"), null, SyncGranularity.LINE,
                 List.of(
                         new SongLine(null, 0, "Sie ist ein Model", 15_260, 19_840, false, null, null),
                         new SongLine(null, 1, "und sie sieht gut aus", 19_840, 24_100, false, null, null)
@@ -38,7 +38,7 @@ class SongMapperTest {
     void everyLineEntityIsLinkedBackToItsParentSong() {
         Song song = new Song(
                 null, "Test", UUID.randomUUID(), "de", null, 5000,
-                LicenseType.ORIGINAL, "storage/test.mp3", null, SyncGranularity.LINE,
+                LicenseType.ORIGINAL, new AudioKey("storage/test.mp3"), null, SyncGranularity.LINE,
                 List.of(new SongLine(null, 0, "Test line", 0, 5000, false, null, null)),
                 null
         );
