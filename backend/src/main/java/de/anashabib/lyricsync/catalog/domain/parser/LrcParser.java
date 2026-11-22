@@ -14,32 +14,36 @@ import java.util.regex.Pattern;
 
 public class LrcParser {
 
-    private static final Pattern TIMESTAMP =
-            Pattern.compile("\\[(\\d{1,3}):([0-5]\\d)(?:[.:](\\d{1,3}))?]");
+    // a line time, [mm:ss], [mm:ss.x], [mm:ss.xx] or [mm:ss.xxx]; only counts at the start of a line
+    private static final Pattern LINE_TIMESTAMP =
+            Pattern.compile("\\s*\\[(\\d{1,3}):([0-5]\\d)(?:[.:](\\d{1,3}))?]");
+
+    // a word timing inside the text: enhanced LRC <mm:ss.xx>, or a [mm:ss.xx] after the text started
+    private static final Pattern WORD_TIMESTAMP =
+            Pattern.compile("[<\\[]\\d{1,3}:[0-5]\\d(?:[.:]\\d{1,3})?[>\\]]");
 
     private static final Pattern METADATA =
             Pattern.compile("\\[([a-zA-Z]+):([^]]+)]");
+
+    private static final char BYTE_ORDER_MARK = '﻿';
 
     public ParsedLrc parse(String raw, Duration trackDuration) {
         List<LrcLine> lines = new ArrayList<>();
         Map<String, String> metadata = new HashMap<>();
 
-        for (String rawLine : raw.split("\\R")) {
-            Matcher timeMatcher = TIMESTAMP.matcher(rawLine);
-
-            // 1. Temporary list to hold all timestamps found on this single line
+        for (String rawLine : withoutByteOrderMark(raw).split("\\R")) {
+            Matcher timeMatcher = LINE_TIMESTAMP.matcher(rawLine);
             List<Integer> lineTimestamps = new ArrayList<>();
             int textStartIndex = 0;
 
-            // 2. The Fix: A while loop to scoop up EVERY timestamp before the text
-            while (timeMatcher.find()) {
+            // [00:24.10][01:42.55]Chorus: every leading timestamp is a start time for the same text
+            while (timeMatcher.region(textStartIndex, rawLine.length()).lookingAt()) {
                 lineTimestamps.add(toMillis(timeMatcher));
-                textStartIndex = timeMatcher.end(); // Move the text start index forward
+                textStartIndex = timeMatcher.end();
             }
 
-            // 3. If we found timestamps, create a separate LrcLine for each one
             if (!lineTimestamps.isEmpty()) {
-                String text = rawLine.substring(textStartIndex).trim();
+                String text = withoutWordTimings(rawLine.substring(textStartIndex));
                 for (int startMs : lineTimestamps) {
                     lines.add(new LrcLine(startMs, text));
                 }
@@ -76,6 +80,16 @@ public class LrcParser {
 
         return new ParsedLrc(metadata, finalLines);
         }
+
+    // Java's UTF-8 decoder keeps the BOM, and it would hide the first line's timestamp
+    private static String withoutByteOrderMark(String raw) {
+        return !raw.isEmpty() && raw.charAt(0) == BYTE_ORDER_MARK ? raw.substring(1) : raw;
+    }
+
+    // word-level sync isn't used yet, so word timings are dropped and the text joined back up
+    private static String withoutWordTimings(String text) {
+        return WORD_TIMESTAMP.matcher(text).replaceAll("").replaceAll("\\s+", " ").strip();
+    }
 
     private int toMillis(Matcher m) {
         int minutes  = Integer.parseInt(m.group(1));

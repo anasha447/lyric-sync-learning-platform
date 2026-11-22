@@ -74,7 +74,36 @@ class LrcParserTest {
         assertThat(result.lines().getFirst().startMs()).isEqualTo(15_000);
     }
 
-    // --- NEW TESTS BELOW ---
+    @Test
+    void ignoresUtf8ByteOrderMark() {
+        ParsedLrc result = parser.parse("﻿[00:15.26]Sie ist ein Model", Duration.ofMinutes(5));
+        assertThat(result.lines()).hasSize(1);
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(15_260);
+        assertThat(result.lines().getFirst().text()).isEqualTo("Sie ist ein Model");
+    }
+
+    @Test
+    void keepsTextBeforeAMidLineTimestamp() {
+        // only the timestamps at the start of a line are line times; one in the middle is a word timing
+        ParsedLrc result = parser.parse("[00:10.00]Sie ist ein [00:12.00]Model", Duration.ofMinutes(5));
+        assertThat(result.lines()).hasSize(1);
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(10_000);
+        assertThat(result.lines().getFirst().text()).isEqualTo("Sie ist ein Model");
+    }
+
+    @Test
+    void stripsEnhancedLrcWordTags() {
+        String lrc = "[00:12.00]<00:12.00>Sie <00:12.40>ist <00:12.80>ein Model<00:14.00>";
+        ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(12_000);
+        assertThat(result.lines().getFirst().text()).isEqualTo("Sie ist ein Model");
+    }
+
+    @Test
+    void lineWithOnlyWordTagsIsInstrumental() {
+        ParsedLrc result = parser.parse("[01:20.00]<01:20.00> <01:21.00>", Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().instrumental()).isTrue();
+    }
 
     @Test
     void expandsRepeatedTimestampsIntoSeparateLines() {
