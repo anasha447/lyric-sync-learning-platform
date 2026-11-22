@@ -5,6 +5,7 @@ import de.anashabib.lyricsync.catalog.adapter.in.web.dto.SongResponse;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestSongCommand;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestSongUseCase;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class SongIngestController {
     private final IngestSongUseCase ingestSongUseCase;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> ingest(@ModelAttribute IngestSongRequest request) throws IOException {
+    public ResponseEntity<?> ingest(@Valid @ModelAttribute IngestSongRequest request) throws IOException {
         IngestResult result = ingestSongUseCase.ingest(toCommand(request));
 
         return switch (result) { // exhaustive — sealed interface, no default needed

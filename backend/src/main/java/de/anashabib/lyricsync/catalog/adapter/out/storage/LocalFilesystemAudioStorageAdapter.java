@@ -1,5 +1,6 @@
 package de.anashabib.lyricsync.catalog.adapter.out.storage;
 
+import de.anashabib.lyricsync.catalog.application.port.out.AudioStorageException;
 import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
 import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
 import org.springframework.beans.factory.annotation.Value;
