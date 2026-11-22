@@ -5,6 +5,7 @@ import de.anashabib.lyricsync.catalog.domain.model.ParsedLrc;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 
@@ -66,6 +67,31 @@ class LrcParserTest {
         ParsedLrc result = parser.parse(lrc, Duration.ofMinutes(5));
         assertThat(result.lines().get(0).startMs()).isEqualTo(0);
         assertThat(result.lines().get(1).startMs()).isEqualTo(500);
+    }
+
+    @Test
+    void nonNumericOffsetIsLeftForTheValidator() {
+        ParsedLrc result = parser.parse("[offset:abc]\n[00:15.00]Line", Duration.ofMinutes(5));
+        assertThat(result.lines().getFirst().startMs()).isEqualTo(15_000);
+        assertThat(result.metadata()).containsEntry("offset", "abc");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"'+250', 250", "'-500', -500", "'0', 0", "' 120 ', 120"})
+    void readsSignedWholeMillisecondsAsOffset(String raw, int expectedMs) {
+        assertThat(LrcParser.offsetMs(raw)).hasValue(expectedMs);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"abc", "1.5", "250ms", "+-5", "99999999999"})
+    void rejectsAnythingElseAsOffset(String raw) {
+        assertThat(LrcParser.offsetMs(raw)).isEmpty();
+    }
+
+    @Test
+    void missingOrBlankOffsetMeansZero() {
+        assertThat(LrcParser.offsetMs(null)).hasValue(0);
+        assertThat(LrcParser.offsetMs(" ")).hasValue(0);
     }
 
     @Test

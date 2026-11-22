@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +25,9 @@ public class LrcParser {
 
     private static final Pattern METADATA =
             Pattern.compile("\\[([a-zA-Z]+):([^]]+)]");
+
+    // whole milliseconds with an optional sign; at most nine digits, so it always fits in an int
+    private static final Pattern OFFSET = Pattern.compile("[+-]?\\d{1,9}");
 
     private static final char BYTE_ORDER_MARK = '﻿';
 
@@ -59,10 +63,10 @@ public class LrcParser {
         }
 
         // [offset:+N] means "show the lyrics N ms sooner", so it's subtracted
-        int offsetMs = parseOffset(metadata.get("offset"));
+        int offset = offsetMs(metadata.get("offset")).orElse(0);
 
         List<LrcLine> shiftedLines = lines.stream()
-                .map(line -> line.shiftedBy(-offsetMs))
+                .map(line -> line.shiftedBy(-offset))
                 .sorted(Comparator.comparingInt(LrcLine::startMs))
                 .toList();
 
@@ -104,7 +108,17 @@ public class LrcParser {
         return (minutes * 60 + seconds) * 1000 + fractionMs;
     }
 
-    private int parseOffset(String raw) {
-        return (raw == null || raw.isBlank()) ? 0 : Integer.parseInt(raw.trim());
+    /**
+     * The value of an {@code [offset:…]} tag. Missing or blank means 0. Anything that isn't a signed
+     * whole number of milliseconds is empty; the parser then ignores it and the validator reports it.
+     */
+    public static OptionalInt offsetMs(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return OptionalInt.of(0);
+        }
+        String value = raw.strip();
+        return OFFSET.matcher(value).matches()
+                ? OptionalInt.of(Integer.parseInt(value))
+                : OptionalInt.empty();
     }
 }

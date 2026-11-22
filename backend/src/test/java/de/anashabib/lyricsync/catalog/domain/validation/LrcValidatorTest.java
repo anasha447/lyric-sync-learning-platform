@@ -80,4 +80,24 @@ class LrcValidatorTest {
         assertThat(validator.validate(lrc, Duration.ofMinutes(3)))
                 .anyMatch(e -> e.message().contains("No timestamped lines"));
     }
+
+    @Test
+    void flagsNonNumericOffsetAsFileLevelError() {
+        ParsedLrc lrc = new ParsedLrc(Map.of("offset", "abc"), List.of(
+                new LrcLine(10_000, "Line")
+        ));
+        List<ValidationError> errors = validator.validate(lrc, Duration.ofSeconds(40));
+
+        assertThat(errors).hasSize(1);
+        assertThat(errors.getFirst().lineIndex()).isNull();
+        assertThat(errors.getFirst().message()).contains("[offset:abc]");
+    }
+
+    @Test
+    void acceptsSignedOffset() {
+        ParsedLrc lrc = new ParsedLrc(Map.of("offset", "-250"), List.of(
+                new LrcLine(10_000, "Line")
+        ));
+        assertThat(validator.validate(lrc, Duration.ofSeconds(40))).isEmpty();
+    }
 }

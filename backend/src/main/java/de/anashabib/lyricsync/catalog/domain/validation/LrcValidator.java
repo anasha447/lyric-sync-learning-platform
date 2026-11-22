@@ -2,10 +2,12 @@ package de.anashabib.lyricsync.catalog.domain.validation;
 
 import de.anashabib.lyricsync.catalog.domain.model.LrcLine;
 import de.anashabib.lyricsync.catalog.domain.model.ParsedLrc;
+import de.anashabib.lyricsync.catalog.domain.parser.LrcParser;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class LrcValidator {
     // Heuristic rules for data density
@@ -17,11 +19,20 @@ public class LrcValidator {
         List<LrcLine> lines = parsedLrc.lines();
         long durationMs = trackDuration.toMillis();
 
+        validateOffset(parsedLrc.metadata(), errors);
         validateLineCount(lines, durationMs, errors);
         validateTimestampBounds(lines, durationMs, errors);
         validateStrictlyIncreasing(lines, errors);
 
         return errors;
+    }
+
+    private void validateOffset(Map<String, String> metadata, List<ValidationError> errors) {
+        String offset = metadata.get("offset");
+        if (LrcParser.offsetMs(offset).isEmpty()) {
+            errors.add(ValidationError.fileLevel(
+                    "[offset:" + offset + "] is not a whole number of milliseconds, e.g. [offset:+250]"));
+        }
     }
 
     private void validateLineCount(List<LrcLine> lines, long durationMs, List<ValidationError> errors) {
