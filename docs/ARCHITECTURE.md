@@ -93,7 +93,8 @@ Rules ([ADR-0002](adr/0002-modular-monolith.md)):
 - A module owns its Postgres schema; no foreign keys cross schemas.
 - Only a module's top-level package is its public API; sub-packages are internal.
 - Queries go through public APIs, state changes travel as events. Events between modules go through the Modulith event publication registry, a transactional outbox, so they survive crashes.
-- `ApplicationModules.verify()` and ArchUnit tests fail the build when a rule is broken.
+- Two tests fail the build when a rule is broken: `ModularityTest` (`ApplicationModules.verify()`, module boundaries) and `HexagonalArchitectureTest` (ArchUnit, layers inside each module). The domain may depend only on the JDK and its own domain packages.
+- `./mvnw verify` also writes module diagrams and canvases (PlantUML, AsciiDoc) to `backend/target/spring-modulith-docs`.
 
 ## 4. Ingestion
 

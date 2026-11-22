@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-11-22 — BE-2.5: Architecture guard tests
+
+- `ModularityTest`: `ApplicationModules.verify()` plus a check that the catalog module is found at all, so verify can't pass on zero modules; writes module docs to `target/spring-modulith-docs`
+- `HexagonalArchitectureTest` (restores the lost ArchUnit test): domain depends only on the JDK and itself; application doesn't know adapters or config; inbound and outbound adapters stay apart; entities and controllers stay in their adapters
+- Rules apply to every module by package pattern, so dictionary and learning get them for free
+- Each rule was proven red with a throwaway violation (Spring and Lombok in the domain, controller → persistence adapter, cross-module call) before committing
+- Broke / learned: Lombok annotations are gone after compiling; ArchUnit only sees Lombok through `@lombok.Generated`, now pinned on in `lombok.config` instead of relying on the default
+- ArchUnit comes in through Spring Modulith, so no new dependency
+
+**Branch:** `chore/BE-2.5-architecture-guard`
+
+---
+
 ## 2026-11-21 — OPS-2.4: Local stack with Docker Compose
 
 - Root `compose.yaml`: Postgres + RabbitMQ by default, Traefik + backend in the `app` profile; DB and broker ports bound to 127.0.0.1 only
