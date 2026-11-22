@@ -15,6 +15,7 @@ import de.anashabib.lyricsync.catalog.domain.validation.LrcValidator;
 import de.anashabib.lyricsync.catalog.domain.validation.ValidationError;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public class IngestSongService implements IngestSongUseCase {
     private final AudioStoragePort audioStoragePort;
     private final ArtistRepositoryPort artistRepositoryPort;
     private final SongRepositoryPort songRepositoryPort;
+    private final TransactionOperations transaction; // a TransactionTemplate in the running app
 
     @Override
     public IngestResult ingest(IngestSongCommand command) {
@@ -65,16 +67,38 @@ public class IngestSongService implements IngestSongUseCase {
             return new IngestResult.ValidationFailure(errors); // nothing saved — audio, artist, song, none of it
         }
 
+        // The file goes first and outside the transaction: no slow I/O while holding database locks.
+        // The artist and the song are then saved together, or not at all.
         AudioKey audioKey = AudioKey.ofMp3(command.audioBytes());
-        audioStoragePort.store(audioKey, command.audioBytes());
-        UUID artistId = resolveArtist(command.artistName()).id();
+        boolean storedNow = audioStoragePort.store(audioKey, command.audioBytes());
+        try {
+            Song saved = transaction.execute(status -> {
+                UUID artistId = resolveArtist(command.artistName()).id();
+                // a draft until the analysis pipeline exists; BE-4.4 submits it for analysis (PROCESSING)
+                Song song = Song.draft(
+                        uniqueSlugFor(command.title()), command.title().strip(), artistId, level,
+                        command.durationMs(), licenseType, command.licenseNote().strip(), audioKey,
+                        toSongLines(parsed));
+                return songRepositoryPort.save(song);
+            });
+            return new IngestResult.Success(saved);
+        } catch (RuntimeException e) {
+            // Nothing in the database points at the file now. Remove it, but only if this upload wrote it:
+            // with content-hash names, a file that was already there belongs to another song.
+            if (storedNow) {
+                deleteAudioQuietly(audioKey, e);
+            }
+            throw e;
+        }
+    }
 
-        // a draft until the analysis pipeline exists; BE-4.4 submits it for analysis (PROCESSING)
-        Song song = Song.draft(
-                uniqueSlugFor(command.title()), command.title().strip(), artistId, level, command.durationMs(),
-                licenseType, command.licenseNote().strip(), audioKey, toSongLines(parsed));
-
-        return new IngestResult.Success(songRepositoryPort.save(song));
+    // if the clean-up fails too, the original error is still the one worth reporting
+    private void deleteAudioQuietly(AudioKey audioKey, RuntimeException original) {
+        try {
+            audioStoragePort.delete(audioKey);
+        } catch (RuntimeException cleanupFailure) {
+            original.addSuppressed(cleanupFailure);
+        }
     }
 
     private String resolveLrcContent(IngestSongCommand command, List<ValidationError> errors) {

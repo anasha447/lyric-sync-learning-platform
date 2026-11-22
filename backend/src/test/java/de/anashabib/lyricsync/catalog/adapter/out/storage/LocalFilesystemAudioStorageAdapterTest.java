@@ -44,4 +44,25 @@ class LocalFilesystemAudioStorageAdapterTest {
             assertThat(files.filter(Files::isRegularFile)).hasSize(1);
         }
     }
+
+    @Test
+    void tellsWhetherItWroteTheFile() {
+        byte[] audio = "an mp3".getBytes();
+        AudioKey key = AudioKey.ofMp3(audio);
+
+        assertThat(adapter.store(key, audio)).isTrue();
+        assertThat(adapter.store(key, audio)).isFalse();
+    }
+
+    @Test
+    void deletesAFileAndIgnoresOneThatIsAlreadyGone() {
+        byte[] audio = "an mp3".getBytes();
+        AudioKey key = AudioKey.ofMp3(audio);
+        adapter.store(key, audio);
+
+        adapter.delete(key);
+        adapter.delete(key);
+
+        assertThat(tempDir.resolve(key.value())).doesNotExist();
+    }
 }

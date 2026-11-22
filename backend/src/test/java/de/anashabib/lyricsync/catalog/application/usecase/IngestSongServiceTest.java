@@ -3,6 +3,7 @@ package de.anashabib.lyricsync.catalog.application.usecase;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestResult;
 import de.anashabib.lyricsync.catalog.application.port.in.IngestSongCommand;
 import de.anashabib.lyricsync.catalog.application.port.out.ArtistRepositoryPort;
+import de.anashabib.lyricsync.catalog.application.port.out.AudioStorageException;
 import de.anashabib.lyricsync.catalog.application.port.out.AudioStoragePort;
 import de.anashabib.lyricsync.catalog.application.port.out.SongRepositoryPort;
 import de.anashabib.lyricsync.catalog.domain.encoding.LrcTextDecoder;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.transaction.support.TransactionOperations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
@@ -28,6 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -46,7 +49,8 @@ class IngestSongServiceTest {
     void setUp() {
         useCase = new IngestSongService(
                 new LrcTextDecoder(), new LrcParser(), new LrcValidator(), new AudioValidator(), // real — pure, already tested
-                audioStoragePort, artistRepositoryPort, songRepositoryPort  // mocked — I/O boundaries
+                audioStoragePort, artistRepositoryPort, songRepositoryPort,  // mocked — I/O boundaries
+                TransactionOperations.withoutTransaction()                  // the real one is tested end to end
         );
     }
 
@@ -238,5 +242,45 @@ class IngestSongServiceTest {
                 .extracting(ValidationError::message)
                 .containsExactly("The audio file is not an MP3", "Either an .lrc file or pasted .lrc text is required");
         verifyNoInteractions(audioStoragePort, songRepositoryPort);
+    }
+
+    @Test
+    void deletesTheAudioItStoredWhenSavingTheSongFails() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
+        when(audioStoragePort.store(any(), any())).thenReturn(true);
+        RuntimeException databaseSaysNo = new RuntimeException("duplicate key value violates unique constraint");
+        when(songRepositoryPort.save(any())).thenThrow(databaseSaysNo);
+        IngestSongCommand command = validCommand("Traditional");
+
+        assertThatThrownBy(() -> useCase.ingest(command)).isSameAs(databaseSaysNo);
+
+        verify(audioStoragePort).delete(AudioKey.ofMp3(command.audioBytes()));
+    }
+
+    @Test
+    void keepsAudioThatWasAlreadyThereBecauseAnotherSongMayUseIt() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
+        when(audioStoragePort.store(any(), any())).thenReturn(false); // same file uploaded before
+        when(songRepositoryPort.save(any())).thenThrow(new RuntimeException("boom"));
+
+        assertThatThrownBy(() -> useCase.ingest(validCommand("Traditional"))).hasMessage("boom");
+
+        verify(audioStoragePort, never()).delete(any());
+    }
+
+    @Test
+    void aFailedCleanUpDoesNotHideWhyTheSaveFailed() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
+        when(audioStoragePort.store(any(), any())).thenReturn(true);
+        when(songRepositoryPort.save(any())).thenThrow(new RuntimeException("boom"));
+        doThrow(new AudioStorageException("disk gone", null)).when(audioStoragePort).delete(any());
+
+        assertThatThrownBy(() -> useCase.ingest(validCommand("Traditional")))
+                .hasMessage("boom")
+                .satisfies(e -> assertThat(e.getSuppressed()).singleElement()
+                        .extracting(Throwable::getMessage).isEqualTo("disk gone"));
     }
 }
