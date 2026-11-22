@@ -11,7 +11,7 @@ services:
       POSTGRES_USER: lyricsync
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_only}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"   # another project on 5432? set POSTGRES_PORT in .env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lyricsync -d lyricsync"]
       interval: 5s
