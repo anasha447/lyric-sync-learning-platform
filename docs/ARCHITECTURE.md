@@ -113,9 +113,10 @@ sequenceDiagram
     alt invalid
         C-->>Admin: 422 with every problem
     else valid
-        C->>R2: store audio
-        C->>C: save song + lines (PROCESSING)
-        C-->>Admin: 201 Created
+        C->>R2: store audio, named by its SHA-256
+        C->>C: one transaction: artist + song + lines (PROCESSING)
+        Note over C,R2: if the transaction fails, the audio this upload wrote is deleted again
+        C-->>Admin: 201 Created + Location
         C->>MQ: SongIngested (via outbox)
         MQ->>N: song.ingested
         N->>N: tokenise, lemma, POS, morphology, svp pairs
@@ -127,7 +128,7 @@ sequenceDiagram
     end
 ```
 
-Re-delivering a message replaces the song's tokens, so the pipeline is safe to retry. Messages that keep failing land in a dead-letter queue, and the song shows FAILED with the reason.
+Audio goes to storage before the database transaction, so no database locks are held during slow I/O. If the process dies between the two steps, an unreferenced file is left behind; that's harmless (nothing points at it), and a later clean-up job can sweep such files. Re-delivering a message replaces the song's tokens, so the pipeline is safe to retry. Messages that keep failing land in a dead-letter queue, and the song shows FAILED with the reason.
 
 ## 5. Review
 

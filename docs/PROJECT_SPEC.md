@@ -217,6 +217,8 @@ POST /api/admin/songs (multipart)
 | `PATCH /api/admin/tokens/{id}`, `PATCH /api/admin/lines/{id}` | backend | Fix entry / edit translation |
 | `POST /api/admin/songs/{id}/publish` | backend | Needs a level and no unmatched tokens |
 
+Errors are `application/problem+json` (RFC 9457) with the same shape everywhere: 400 for missing or malformed fields, 413 for uploads over 20 MB, 422 when the content breaks a rule (for example a bad `.lrc` line), 500 for anything unexpected, which is logged and never exposes internals. Where it helps, `errors` lists each problem as `{ "field" | "line", "message" }`.
+
 Example token in `GET /api/songs/{slug}`:
 ```json
 {
