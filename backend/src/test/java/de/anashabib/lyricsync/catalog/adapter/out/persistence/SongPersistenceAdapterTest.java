@@ -10,6 +10,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -17,6 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 import java.util.UUID;
 
+import static de.anashabib.lyricsync.catalog.domain.model.TestSongs.line;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -38,68 +40,105 @@ class SongPersistenceAdapterTest {
     ArtistPersistenceAdapter artistAdapter;
 
     @Autowired
-    SongJpaRepository jpaRepository; // <-- Added to force manual database flushes
+    SongJpaRepository jpaRepository; // to flush, so the SQL actually reaches Postgres
 
     @Test
     void savesAndRetrievesASongWithItsLines() {
-        UUID artistId = artistAdapter.save(new Artist(null, "Kraftwerk")).id();
-
-        Song saved = songAdapter.save(songWith(artistId, List.of(
-                new SongLine(null, 0, "Sie ist ein Model", 15_260, 19_840, false, null, null),
-                new SongLine(null, 1, "und sie sieht gut aus", 19_840, 24_100, false, null, null)
-        )));
+        Song saved = songAdapter.save(TestSongs.draft(kraftwerk(), List.of(
+                line(0, 15_260, 19_840, "Sie ist ein Model"),
+                line(1, 19_840, 24_100, "und sie sieht gut aus"))));
 
         Song found = songAdapter.findById(saved.id()).orElseThrow();
-        assertThat(found.lines()).hasSize(2);
-        assertThat(found.lines().get(0).rawText()).isEqualTo("Sie ist ein Model");
+        assertThat(found.lines()).extracting(SongLine::rawText)
+                .containsExactly("Sie ist ein Model", "und sie sieht gut aus");
+        assertThat(found.status()).isEqualTo(SongStatus.DRAFT);
+        assertThat(found.slug()).isEqualTo(new Slug("das-model"));
+        assertThat(found.version()).isZero();
     }
 
     @Test
     void removingALineOnUpdateActuallyDeletesItFromTheDatabase() {
-        UUID artistId = artistAdapter.save(new Artist(null, "Kraftwerk")).id();
-
-        Song original = songAdapter.save(songWith(artistId, List.of(
-                new SongLine(null, 0, "Line A", 0, 5000, false, null, null),
-                new SongLine(null, 1, "Line B", 5000, 10000, false, null, null)
-        )));
-
-        // Flush ensures the original lines are securely locked into the database
+        Song original = songAdapter.save(TestSongs.draft(kraftwerk(), List.of(
+                line(0, 0, 5_000, "Line A"),
+                line(1, 5_000, 10_000, "Line B"))));
         jpaRepository.flush();
 
-        Song updated = new Song(
-                original.id(), original.title(), original.artistId(), original.languageCode(),
-                original.cefrLevel(), original.durationMs(), original.licenseType(),
-                original.audioKey(), original.coverImageUrl(), original.syncGranularity(),
-                List.of(original.lines().getFirst()), original.createdAt()
-        );
-
-        songAdapter.save(updated);
-        jpaRepository.flush(); // Force the delete statement to run before checking
+        songAdapter.save(withLines(original, List.of(original.lines().getFirst())));
+        jpaRepository.flush(); // force the DELETE to run before checking
 
         assertThat(songAdapter.findById(original.id()).orElseThrow().lines()).hasSize(1);
     }
 
     @Test
-    void unknownLanguageCodeStillFailsAtTheDatabaseLevel() {
-        UUID artistId = artistAdapter.save(new Artist(null, "Kraftwerk")).id();
+    void everyUpdateBumpsTheVersion() {
+        Song original = songAdapter.save(draftBy(kraftwerk()));
+        jpaRepository.flush();
 
-        Song song = new Song(
-                null, "Test", artistId, "xx", null, 180_000,
-                LicenseType.ORIGINAL, new AudioKey("storage/test.mp3"), null, SyncGranularity.LINE, List.of(), null
-        );
+        songAdapter.save(original.submitForAnalysis());
+        jpaRepository.flush();
 
-        // We queue the save in memory...
-        songAdapter.save(song);
+        assertThat(songAdapter.findById(original.id()).orElseThrow().version()).isEqualTo(original.version() + 1);
+    }
 
-        // ...but we MUST manually flush to force Hibernate to send the INSERT to Postgres.
+    @Test
+    void savingAStaleCopyFailsInsteadOfOverwritingNewerChanges() {
+        Song original = songAdapter.save(draftBy(kraftwerk()));
+        jpaRepository.flush();
+        songAdapter.save(original.submitForAnalysis()); // someone else got there first
+        jpaRepository.flush();
+
+        // still holds the old version number
+        assertThatThrownBy(() -> songAdapter.save(original.submitForAnalysis()))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+    }
+
+    @Test
+    void findsOutWhetherASlugIsTaken() {
+        songAdapter.save(draftBy(kraftwerk()));
+        jpaRepository.flush();
+
+        assertThat(songAdapter.existsBySlug(new Slug("das-model"))).isTrue();
+        assertThat(songAdapter.existsBySlug(new Slug("das-model-2"))).isFalse();
+    }
+
+    @Test
+    void databaseRejectsADuplicateSlug() {
+        UUID artistId = kraftwerk();
+        songAdapter.save(draftBy(artistId));
+        jpaRepository.flush();
+
+        songAdapter.save(draftBy(artistId)); // same title, so the same slug
+
         assertThatThrownBy(() -> jpaRepository.flush())
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    private Song songWith(UUID artistId, List<SongLine> lines) {
-        return new Song(
-                null, "Das Model", artistId, "de", "B1", 218_000,
-                LicenseType.LICENSED, new AudioKey("storage/das-model.mp3"), null, SyncGranularity.LINE, lines, null
-        );
+    @Test
+    void unknownLanguageCodeStillFailsAtTheDatabaseLevel() {
+        songAdapter.save(withLanguage(TestSongs.draft(kraftwerk(), List.of(line(0, 0, 5_000, "Test"))), "xx"));
+
+        // the INSERT only reaches Postgres on flush
+        assertThatThrownBy(() -> jpaRepository.flush())
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private static Song draftBy(UUID artistId) {
+        return TestSongs.draft(artistId, List.of(line(0, 15_260, 19_840, "Sie ist ein Model")));
+    }
+
+    private UUID kraftwerk() {
+        return artistAdapter.save(new Artist(null, "Kraftwerk")).id();
+    }
+
+    private static Song withLines(Song s, List<SongLine> lines) {
+        return new Song(s.id(), s.slug(), s.title(), s.artistId(), s.languageCode(), s.cefrLevel(),
+                s.durationMs(), s.status(), s.failureReason(), s.licenseType(), s.licenseNote(), s.audioKey(),
+                s.coverImageUrl(), s.syncGranularity(), lines, s.version(), s.createdAt(), s.publishedAt());
+    }
+
+    private static Song withLanguage(Song s, String languageCode) {
+        return new Song(s.id(), s.slug(), s.title(), s.artistId(), languageCode, s.cefrLevel(),
+                s.durationMs(), s.status(), s.failureReason(), s.licenseType(), s.licenseNote(), s.audioKey(),
+                s.coverImageUrl(), s.syncGranularity(), s.lines(), s.version(), s.createdAt(), s.publishedAt());
     }
 }

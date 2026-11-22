@@ -6,9 +6,13 @@ import de.anashabib.lyricsync.catalog.application.port.out.SongRepositoryPort;
 import de.anashabib.lyricsync.catalog.domain.encoding.LrcTextDecoder;
 import de.anashabib.lyricsync.catalog.domain.model.Artist;
 import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
+import de.anashabib.lyricsync.catalog.domain.model.CefrLevel;
+import de.anashabib.lyricsync.catalog.domain.model.Slug;
 import de.anashabib.lyricsync.catalog.domain.model.Song;
+import de.anashabib.lyricsync.catalog.domain.model.SongStatus;
 import de.anashabib.lyricsync.catalog.domain.parser.LrcParser;
 import de.anashabib.lyricsync.catalog.domain.validation.LrcValidator;
+import de.anashabib.lyricsync.catalog.domain.validation.ValidationError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,18 +50,16 @@ class IngestSongUseCaseTest {
         when(artistRepositoryPort.findByNameIgnoringCase("Traditional")).thenReturn(Optional.empty());
         when(artistRepositoryPort.save(any())).thenAnswer(inv ->
                 new Artist(UUID.randomUUID(), inv.<Artist>getArgument(0).name()));
-        when(songRepositoryPort.save(any())).thenAnswer(inv -> {
-            Song s = inv.getArgument(0);
-            return new Song(UUID.randomUUID(), s.title(), s.artistId(), s.languageCode(), s.cefrLevel(),
-                    s.durationMs(), s.licenseType(), s.audioKey(), s.coverImageUrl(),
-                    s.syncGranularity(), s.lines(), Instant.now());
-        });
+        when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         IngestResult result = useCase.ingest(validCommand("Traditional"));
 
         assertThat(result).isInstanceOf(IngestResult.Success.class);
         Song saved = ((IngestResult.Success) result).song();
-        assertThat(saved.id()).isNotNull();
+        assertThat(saved.status()).isEqualTo(SongStatus.DRAFT);
+        assertThat(saved.slug()).isEqualTo(new Slug("test-song"));
+        assertThat(saved.cefrLevel()).isEqualTo(CefrLevel.A2);
+        assertThat(saved.licenseNote()).isEqualTo("Public domain, Wikisource");
         assertThat(saved.lines()).hasSize(1);
     }
 
@@ -110,7 +112,7 @@ class IngestSongUseCaseTest {
         IngestSongCommand command = new IngestSongCommand(
                 "audio".getBytes(), "song.mp3",
                 "[99:00.00]Way past the end".getBytes(StandardCharsets.UTF_8), null,
-                "Test", "Artist", "A2", "public_domain", 10_000 // 10s track, line at 99 minutes
+                "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 10_000 // 10s track, line at 99 minutes
         );
 
         IngestResult result = useCase.ingest(command);
@@ -124,7 +126,7 @@ class IngestSongUseCaseTest {
         IngestSongCommand command = new IngestSongCommand(
                 "audio".getBytes(), "song.mp3",
                 "[offset:abc]\n[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
-                "Test", "Artist", "A2", "public_domain", 20_000
+                "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 20_000
         );
 
         IngestResult result = useCase.ingest(command);
@@ -137,7 +139,7 @@ class IngestSongUseCaseTest {
     void rejectsRequestWithNeitherLrcFileNorPastedText() {
         IngestSongCommand command = new IngestSongCommand(
                 "audio".getBytes(), "song.mp3", null, null,
-                "Test", "Artist", "A2", "public_domain", 10_000
+                "Test", "Artist", "A2", "public_domain", "Public domain, Wikisource", 10_000
         );
 
         IngestResult result = useCase.ingest(command);
@@ -151,17 +153,70 @@ class IngestSongUseCaseTest {
         IngestSongCommand command = new IngestSongCommand(
                 "audio".getBytes(), "song.mp3",
                 "[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
-                "Test", "Artist", "A2", "stolen", 20_000
+                "Test", "Artist", "A2", "stolen", "Found it online", 20_000
         );
 
         assertThat(useCase.ingest(command)).isInstanceOf(IngestResult.ValidationFailure.class);
+    }
+
+    @Test
+    void takesTheNextFreeSlugWhenTheTitleIsTaken() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
+        when(songRepositoryPort.existsBySlug(new Slug("test-song"))).thenReturn(true);
+        when(songRepositoryPort.existsBySlug(new Slug("test-song-2"))).thenReturn(true);
+        when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Song saved = ((IngestResult.Success) useCase.ingest(validCommand("Traditional"))).song();
+
+        assertThat(saved.slug()).isEqualTo(new Slug("test-song-3"));
+    }
+
+    @Test
+    void levelIsOptionalAtUpload() {
+        when(artistRepositoryPort.findByNameIgnoringCase("Traditional"))
+                .thenReturn(Optional.of(new Artist(UUID.randomUUID(), "Traditional")));
+        when(songRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        IngestResult result = useCase.ingest(command("Test Song", "", "Public domain, Wikisource", 20_000));
+
+        assertThat(((IngestResult.Success) result).song().cefrLevel()).isNull();
+    }
+
+    @Test
+    void reportsEveryMissingOrWrongFieldAtOnce() {
+        IngestResult result = useCase.ingest(command(" ", "C2", "", 20_000));
+
+        assertThat(result).isInstanceOf(IngestResult.ValidationFailure.class);
+        assertThat(((IngestResult.ValidationFailure) result).errors())
+                .extracting(ValidationError::message)
+                .anyMatch(m -> m.contains("Title is required"))
+                .anyMatch(m -> m.contains("expected A1, A2, B1 or B2"))
+                .anyMatch(m -> m.contains("License note is required"));
+        verifyNoInteractions(audioStoragePort, songRepositoryPort);
+    }
+
+    @Test
+    void zeroDurationIsAValidationFailureNotACrash() {
+        IngestResult result = useCase.ingest(command("Test Song", "A2", "CC0", 0));
+
+        assertThat(result).isInstanceOf(IngestResult.ValidationFailure.class);
+        verifyNoInteractions(audioStoragePort, songRepositoryPort);
     }
 
     private IngestSongCommand validCommand(String artistName) {
         return new IngestSongCommand(
                 "audio".getBytes(), "song.mp3",
                 "[00:10.00]Line".getBytes(StandardCharsets.UTF_8), null,
-                "Test Song", artistName, "A2", "public_domain", 20_000
+                "Test Song", artistName, "A2", "public_domain", "Public domain, Wikisource", 20_000
+        );
+    }
+
+    private IngestSongCommand command(String title, String level, String licenseNote, int durationMs) {
+        return new IngestSongCommand(
+                "audio".getBytes(), "song.mp3",
+                "[00:00.00]Line".getBytes(StandardCharsets.UTF_8), null,
+                title, "Traditional", level, "public_domain", licenseNote, durationMs
         );
     }
 }

@@ -3,6 +3,7 @@ package de.anashabib.lyricsync.catalog.adapter.out.persistence.mapper;
 import de.anashabib.lyricsync.catalog.adapter.out.persistence.entity.SongEntity;
 import de.anashabib.lyricsync.catalog.adapter.out.persistence.entity.SongLineEntity;
 import de.anashabib.lyricsync.catalog.domain.model.AudioKey;
+import de.anashabib.lyricsync.catalog.domain.model.Slug;
 import de.anashabib.lyricsync.catalog.domain.model.Song;
 import de.anashabib.lyricsync.catalog.domain.model.SongLine;
 import org.springframework.stereotype.Component;
@@ -15,15 +16,21 @@ public class SongMapper {
     public SongEntity toEntity(Song song) {
         SongEntity entity = new SongEntity();
         entity.setId(song.id());
+        entity.setSlug(song.slug().value());
         entity.setTitle(song.title());
         entity.setArtistId(song.artistId());
         entity.setLanguageCode(song.languageCode());
         entity.setCefrLevel(song.cefrLevel());
         entity.setDurationMs(song.durationMs());
+        entity.setStatus(song.status());
+        entity.setFailureReason(song.failureReason());
+        entity.setVersion(song.version()); // null = new row, otherwise checked against the database
         entity.setLicenseType(song.licenseType());
+        entity.setLicenseNote(song.licenseNote());
         entity.setAudioKey(song.audioKey().value());
         entity.setCoverImageUrl(song.coverImageUrl());
         entity.setSyncGranularity(song.syncGranularity());
+        entity.setPublishedAt(song.publishedAt());
 
         List<SongLineEntity> lineEntities = song.lines().stream()
                 .map(line -> toLineEntity(line, entity))
@@ -56,10 +63,11 @@ public class SongMapper {
                 .toList();
 
         return new Song(
-                entity.getId(), entity.getTitle(), entity.getArtistId(), entity.getLanguageCode(),
-                entity.getCefrLevel(), entity.getDurationMs(), entity.getLicenseType(),
+                entity.getId(), new Slug(entity.getSlug()), entity.getTitle(), entity.getArtistId(),
+                entity.getLanguageCode(), entity.getCefrLevel(), entity.getDurationMs(),
+                entity.getStatus(), entity.getFailureReason(), entity.getLicenseType(), entity.getLicenseNote(),
                 new AudioKey(entity.getAudioKey()), entity.getCoverImageUrl(), entity.getSyncGranularity(),
-                lines, entity.getCreatedAt()
+                lines, entity.getVersion(), entity.getCreatedAt(), entity.getPublishedAt()
         );
     }
 
