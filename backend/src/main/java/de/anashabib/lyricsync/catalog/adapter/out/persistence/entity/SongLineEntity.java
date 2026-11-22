@@ -15,7 +15,7 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Entity
-@Table(name = "song_lines")
+@Table(schema = "catalog", name = "song_line")
 @Getter @Setter @NoArgsConstructor
 public class SongLineEntity {
 
