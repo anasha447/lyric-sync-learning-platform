@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "songs")
+@Table(schema = "catalog", name = "song")
 @Getter @Setter @NoArgsConstructor
 public class SongEntity {
 

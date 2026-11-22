@@ -12,7 +12,7 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Entity
-@Table(name = "artists")
+@Table(schema = "catalog", name = "artist")
 @Getter @Setter @NoArgsConstructor
 public class ArtistEntity {
 
