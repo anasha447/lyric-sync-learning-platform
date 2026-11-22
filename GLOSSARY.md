@@ -8,6 +8,10 @@ English speakers learn German by listening to songs with synced, tappable lyrics
 A recording with its timed lyrics, artist, level and license that learners play.
 _Avoid_: Track, content
 
+**Cover**:
+The square picture shown for a song: uploaded by an admin, or generated from the song's title when none is uploaded.
+_Avoid_: Album art, thumbnail
+
 **Line**:
 One timed lyric line of a song, with a start time, an end time and an optional line translation.
 _Avoid_: Lyric line, song line, verse
@@ -79,11 +83,21 @@ A person's login identity: email, password and role.
 _Avoid_: User (ambiguous), profile
 
 **Learner**:
-The learning side of an account: level, daily goal, timezone, saved words and progress.
+The learning side of an account: display name, level, learning reasons, daily goal, timezone, saved words and progress.
 _Avoid_: User, student
 
+**Display name**:
+The optional name a learner wants to be called, used to greet them.
+_Avoid_: Username (logins use email; there are no usernames)
+
+**Onboarding**:
+The four questions on a first visit that set up a guest or learner: display name, level, learning reasons and daily goal.
+
+**Learning reason**:
+One of the reasons a learner gave for learning German; a learner can have several.
+
 **Guest**:
-A visitor learning without an account; their level and completions live only in their browser until they sign up.
+A visitor learning without an account; their onboarding answers and completions live only in their browser until they sign up.
 
 **Admin**:
 An account allowed to ingest, review and publish songs.
@@ -111,7 +125,7 @@ A saved word whose next review time has passed.
 A learner played a song to its end at least once.
 
 **Daily goal**:
-The number of reviews a learner aims for each day.
+The number of reviews a learner aims for each day, chosen during onboarding as minutes per day (5, 10, 15 or 20 minutes for 10, 20, 30 or 40 reviews).
 
 **Streak**:
 Consecutive days, in the learner's timezone, on which the daily goal was met, or everything due was reviewed and a song was completed.
