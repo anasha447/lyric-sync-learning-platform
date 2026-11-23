@@ -133,6 +133,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: web
@@ -149,7 +150,10 @@ jobs:
       - run: npm test
       - name: Build the Worker
         run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+        # a stuck download fails fast and can be re-run, instead of holding the job for hours
+        timeout-minutes: 8
       - name: End-to-end tests (390 px and 1440 px)
         run: npm run test:e2e
 
