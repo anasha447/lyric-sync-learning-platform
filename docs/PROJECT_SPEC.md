@@ -118,7 +118,7 @@ A day counts toward the *streak* (learner's timezone) when the daily goal is met
 ## 6. Frontend (`web/`)
 
 ### 6.1 Stack
-Next.js API on vinext + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom sheet), TanStack Query, Motion (animation), Lucide icons, self-hosted fonts. Vitest + Testing Library; Playwright for one or two end-to-end happy paths. **Mobile first.** Deployed to Cloudflare Workers (ADR-0012, written in FE-3.3).
+Next.js API on vinext + TypeScript + Tailwind, shadcn/ui, Vaul (mobile bottom sheet), TanStack Query, Motion (animation), Lucide icons, self-hosted fonts. Vitest + Testing Library; Playwright for one or two end-to-end happy paths. **Mobile first.** Deployed to Cloudflare Workers with vinext ([ADR-0012](adr/0012-web-on-cloudflare-workers.md)).
 
 Look, feel and motion: [DESIGN.md](../DESIGN.md). Users, voice and onboarding: [PRODUCT.md](../PRODUCT.md). Ticket order: [FRONTEND_ROADMAP.md](FRONTEND_ROADMAP.md).
 
