@@ -24,6 +24,7 @@ jobs:
       pull-requests: read
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -32,6 +33,10 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - 'DESIGN.md'
               - '.github/workflows/ci.yml'
 
   backend:
@@ -123,15 +128,74 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=backend
 
+  web:
+    name: Web lint, types and tests
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build the Worker
+        run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end tests (390 px and 1440 px)
+        run: npm run test:e2e
+
+  web-deploy:
+    name: Web deploy to Workers
+    needs: [changes, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: web-deploy
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: web
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Skip until the Cloudflare secrets exist
+        id: token
+        working-directory: .
+        run: echo "present=${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.token.outputs.present == 'true'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - if: steps.token.outputs.present == 'true'
+        run: npm ci
+      - if: steps.token.outputs.present == 'true'
+        run: npm run build
+      - if: steps.token.outputs.present == 'true'
+        run: npm run deploy
+
   ci-result:
     name: CI result
-    needs: [changes, backend, backend-image]
+    needs: [changes, backend, backend-image, web, web-deploy]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if a required job failed
         run: |
-          echo "changes: ${{ needs.changes.result }}, backend: ${{ needs.backend.result }}, image: ${{ needs.backend-image.result }}"
+          echo "changes: ${{ needs.changes.result }}, backend: ${{ needs.backend.result }}, image: ${{ needs.backend-image.result }}, web: ${{ needs.web.result }}, deploy: ${{ needs.web-deploy.result }}"
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             exit 1
           fi
