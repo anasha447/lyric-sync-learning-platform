@@ -7,6 +7,9 @@ export default defineConfig({
   fullyParallel: true,
   // two browsers at a time: like the 4-core CI runners, and stable next to the compose stack locally
   workers: 2,
+  // a page's first hydration can take over 5 s on a busy machine (the compose stack running next
+  // to the browsers); a longer wait only slows failing checks, it never changes what they check
+  expect: { timeout: 10_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
@@ -18,7 +21,8 @@ export default defineConfig({
   },
   // The two widths every ticket is checked at (DESIGN.md finish checklist).
   projects: [
-    { name: "phone", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } },
+    // a touch screen, so tests can tap (a tap plays from a line; a mouse click on words does not)
+    { name: "phone", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, hasTouch: true } },
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: {

@@ -33,9 +33,11 @@ test("level tabs filter the songs and work with arrow keys", async ({ page }) =>
   await page.goto("/library");
   const tabs = page.getByRole("tablist", { name: "Level" });
   await expect(tabs.getByRole("tab", { name: "All levels" })).toHaveAttribute("aria-selected", "true");
+  // the songs arrive only once the page is hydrated: a click before that would go nowhere
+  const grid = page.getByRole("tabpanel");
+  await expect(grid.getByRole("link")).toHaveCount(3);
 
   await tabs.getByRole("tab", { name: "B1" }).click();
-  const grid = page.getByRole("tabpanel");
   await expect(grid.getByRole("link")).toHaveCount(1);
   await expect(grid).toContainText("Die Gedanken sind frei");
 
