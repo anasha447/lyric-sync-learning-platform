@@ -104,6 +104,13 @@ An account allowed to ingest, review and publish songs.
 
 ## Learning
 
+**Word lookup**:
+Opening a word's card to see its meanings, base form and gender.
+_Avoid_: Word tap (a tap on a phone plays from the line), definition
+
+**Guest lookup limit**:
+The number of word lookups a guest gets each day before they're asked to sign up.
+
 **Saved word**:
 A dictionary entry a learner chose to review. A learner has at most one saved word per dictionary entry.
 _Avoid_: Vocab item, card, flashcard
