@@ -15,4 +15,6 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
     },
   },
+  // Node scripts (the e2e seed)
+  { files: ["**/*.mjs"], languageOptions: { globals: globals.node } },
 );
