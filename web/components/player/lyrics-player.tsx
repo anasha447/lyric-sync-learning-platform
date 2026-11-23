@@ -18,11 +18,24 @@ export function LyricsPlayer({ song }: { song: PublicSong }) {
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const controls = usePlayerControls(audio, song.lines, song.durationMs);
   const { activeIndex, activeLineRef } = useLineSync(audio, song.lines, controls.loopIndexRef);
-  const { following, backToSong } = useAutoScroll(activeIndex, activeLineRef);
+  const { following, backToSong, follow } = useAutoScroll(activeIndex, activeLineRef);
   // the last line that started, kept through gaps; going back in the song lowers it again
   const [lastSung, setLastSung] = useState(-1);
   if (activeIndex !== -1 && activeIndex !== lastSung) setLastSung(activeIndex);
   const currentLine = activeIndex !== -1 ? activeIndex : lastSung;
+
+  // Translations off: a tap on a line's words shows that line's translation until the song
+  // has moved on from it (DESIGN.md → Lyric line). `reached` waits for the jump to land first.
+  const [revealed, setRevealed] = useState<{ line: number; reached: boolean } | null>(null);
+  if (revealed && !revealed.reached && activeIndex === revealed.line) setRevealed({ ...revealed, reached: true });
+  if (revealed?.reached && activeIndex !== revealed.line) setRevealed(null);
+
+  const { playFromLine } = controls;
+  const playFrom = (index: number, revealTranslation: boolean) => {
+    playFromLine(index);
+    follow();
+    setRevealed(revealTranslation && !controls.showTranslations ? { line: index, reached: false } : null);
+  };
 
   const stateOf = (index: number): LineState =>
     index === activeIndex ? "active" : index <= lastSung ? "done" : "upcoming";
@@ -52,14 +65,15 @@ export function LyricsPlayer({ song }: { song: PublicSong }) {
             line={line}
             state={stateOf(i)}
             looped={controls.loopIndex === i}
-            showTranslation={controls.showTranslations}
+            showTranslation={controls.showTranslations || revealed?.line === i}
+            onPlay={(revealTranslation) => playFrom(i, revealTranslation)}
             ref={i === activeIndex ? (el) => void (activeLineRef.current = el) : undefined}
           />
         ))}
       </ol>
 
       {/* room under the last line, so the player never covers it */}
-      <div aria-hidden className="h-[calc(64px+24px)] md:h-[calc(var(--height-player-bar)+24px)]" />
+      <div aria-hidden className="h-[calc(var(--height-mini-player)+24px)] md:h-[calc(var(--height-player-bar)+24px)]" />
 
       <Player song={song} audio={audio} controls={controls} currentLine={currentLine} />
 
@@ -71,7 +85,7 @@ export function LyricsPlayer({ song }: { song: PublicSong }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { duration: duration.standard, ease: ease.out } }}
             exit={{ opacity: 0, transition: { duration: duration.exit, ease: ease.in } }}
-            className="fixed bottom-[calc(var(--height-tab-bar)+64px+24px)] left-1/2 z-20 -translate-x-1/2 rounded-pill bg-plum px-6 py-3 text-label text-ink shadow-overlay md:bottom-[calc(var(--height-player-bar)+16px)] md:left-[calc(50%+var(--width-sidebar-collapsed)/2)] lg:left-[calc(50%+var(--width-sidebar)/2)]"
+            className="fixed bottom-[calc(var(--height-tab-bar)+var(--height-mini-player)+24px)] left-1/2 z-20 -translate-x-1/2 rounded-pill bg-plum px-6 py-3 text-label text-ink shadow-overlay md:bottom-[calc(var(--height-player-bar)+16px)] md:left-[calc(50%+var(--width-sidebar-collapsed)/2)] lg:left-[calc(50%+var(--width-sidebar)/2)]"
           >
             Back to the song
           </motion.button>
