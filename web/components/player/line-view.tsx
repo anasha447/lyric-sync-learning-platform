@@ -1,3 +1,4 @@
+import { Repeat1 } from "lucide-react";
 import type { Ref } from "react";
 import { cn } from "@/lib/utils";
 import type { Line } from "@/lib/songs";
@@ -13,11 +14,14 @@ export function LineView({
   line,
   state,
   showTranslation,
+  looped = false,
   ref,
 }: {
   line: Line;
   state: LineState;
   showTranslation: boolean;
+  /** The line the learner is looping: marked with an icon, not colour alone. */
+  looped?: boolean;
   ref?: Ref<HTMLLIElement>;
 }) {
   const active = state === "active";
@@ -51,6 +55,12 @@ export function LineView({
         >
           {line.instrumental ? <span aria-label="Instrumental">♪</span> : line.text}
         </span>
+        {looped && (
+          <span className="ml-2 inline-flex translate-y-0.5 text-violet-light" title="Looping this line">
+            <Repeat1 size={18} strokeWidth={1.5} aria-hidden />
+            <span className="sr-only"> (looping)</span>
+          </span>
+        )}
       </p>
       {showTranslation && line.translation && !line.instrumental && (
         <span lang="en" className="max-w-[65ch] text-translation text-teal-light">

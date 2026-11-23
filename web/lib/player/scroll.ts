@@ -9,5 +9,8 @@ export function scrollTargetFor(lineTop: number, lineHeight: number, viewportHei
   return Math.max(0, Math.round(lineTop + lineHeight / 2 - viewportHeight * ACTIVE_LINE_POSITION));
 }
 
-/** Keys that scroll the page: pressing one means the learner took over scrolling. */
-export const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
+/**
+ * Keys that scroll the page: pressing one means the learner took over scrolling.
+ * Space isn't one: on the song page it plays and pauses (DESIGN.md → Play button).
+ */
+export const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);

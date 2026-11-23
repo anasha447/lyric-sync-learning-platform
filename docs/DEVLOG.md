@@ -1,5 +1,22 @@
 # Development Log
 
+## 2026-11-23 — FE-3.5: Player controls
+
+- Logic first, tested: time formatting, spoken time for screen readers, keyboard seeking (±5 s, Home/End), speeds 1 / 0.85 / 0.75, the loop rule, and the sine-wave path
+- Play button: play and pause are two four-point outlines, so Motion morphs the shape with `spring-soft`; the glow fades in on two opacity layers and breathes at 2.4 s while playing; with reduced motion the icon fades and the glow is static
+- Wave timeline: drawn on animation frames straight into the SVG; the amplitude eases 3 px ↔ 0 over `duration-slow`, so the wave flattens on pause; `role="slider"` with spoken time; click, drag and keys seek
+- Player bar (88 px, blurred dusk) on tablet and desktop; on phones a mini player pill above the tab bar that opens a sheet (Motion, not a new dependency); Escape closes it and focus returns
+- Loop: loops the line playing when pressed, marked with an icon (not colour alone); seeking out of it ends the loop. Speed keeps the pitch (`preservesPitch`)
+- Space plays and pauses anywhere on the song page unless a control has focus; Space no longer counts as scrolling
+- React Compiler lint forbids writing to a hook argument, so writes to the `<audio>` element live in two plain helpers
+- Test fixes: the audio mock now answers Range requests (without them a browser can't seek into unloaded audio); the phone tests wait for the sheet to settle before measuring
+- Product fix found by a 1-in-100 failure: line sync and loop also run on `timeupdate`, because animation frames slow down on busy devices and stop in background tabs
+- The player lives on the song page for now; keeping a song playing across pages is its own ticket
+
+**Branch:** `feature/FE-3.5-player-controls`
+
+---
+
 ## 2026-11-23 — FE-3.4: Synced lyrics player
 
 - `findLineAt`: binary search for the line being sung, test-first; a line covers [start, end), gaps and the time after the last line have no active line

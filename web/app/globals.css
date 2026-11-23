@@ -48,6 +48,33 @@ body {
   }
 }
 
+/*
+ * The playing glow (DESIGN.md → Motion → signature 2): the outer layer fades in and out
+ * over duration-standard; while playing, the inner layer breathes between 50 % and 100 %
+ * over 2.4 s. Opacity on two layers, so fading out never fights the breathing.
+ */
+.play-glow {
+  opacity: 0;
+  transition: opacity var(--duration-standard) var(--ease-out);
+}
+.play-glow[data-on] {
+  opacity: 1;
+}
+.play-glow-breath {
+  box-shadow: var(--shadow-playing);
+}
+.play-glow[data-on] .play-glow-breath {
+  animation: play-breathe 2.4s ease-in-out infinite alternate;
+}
+@keyframes play-breathe {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Reduced motion: short crossfades only, and nothing loops. Motion components follow MotionConfig. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -57,5 +84,9 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: var(--duration-instant) !important;
     scroll-behavior: auto !important;
+  }
+  /* the glow is static */
+  .play-glow[data-on] .play-glow-breath {
+    animation: none !important;
   }
 }

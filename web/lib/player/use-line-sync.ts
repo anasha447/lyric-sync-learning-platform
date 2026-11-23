@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { loopRestartMs } from "./controls";
+import { seekAudio } from "./media";
 import { findLineAt, lineProgress, type TimedLine } from "./lines";
 
 /**
@@ -10,7 +12,12 @@ import { findLineAt, lineProgress, type TimedLine } from "./lines";
  * straight into a CSS variable on the active line, so React re-renders only when the
  * line changes, not 60 times a second.
  */
-export function useLineSync(audio: HTMLAudioElement | null, lines: readonly TimedLine[]) {
+export function useLineSync(
+  audio: HTMLAudioElement | null,
+  lines: readonly TimedLine[],
+  /** The looped line, if any; read every frame, so changing it doesn't restart the loop. */
+  loopIndexRef?: RefObject<number | null>,
+) {
   const [activeIndex, setActiveIndex] = useState(-1);
   const activeLineRef = useRef<HTMLElement | null>(null);
 
@@ -20,7 +27,12 @@ export function useLineSync(audio: HTMLAudioElement | null, lines: readonly Time
     let current = -1;
 
     const update = () => {
-      const timeMs = audio.currentTime * 1000;
+      let timeMs = audio.currentTime * 1000;
+      const restartMs = loopRestartMs(lines, loopIndexRef?.current ?? null, timeMs);
+      if (restartMs !== null) {
+        seekAudio(audio, restartMs / 1000);
+        timeMs = restartMs;
+      }
       const index = findLineAt(lines, timeMs);
       if (index !== current) {
         current = index;
@@ -48,6 +60,9 @@ export function useLineSync(audio: HTMLAudioElement | null, lines: readonly Time
     audio.addEventListener("ended", stop);
     audio.addEventListener("seeked", update);
     audio.addEventListener("loadedmetadata", update);
+    // Animation frames slow down on a busy device and stop in background tabs, but the
+    // audio plays on; timeupdate (~4 Hz) keeps the line and the loop correct even then.
+    audio.addEventListener("timeupdate", update);
     if (audio.paused) update();
     else start();
 
@@ -58,8 +73,9 @@ export function useLineSync(audio: HTMLAudioElement | null, lines: readonly Time
       audio.removeEventListener("ended", stop);
       audio.removeEventListener("seeked", update);
       audio.removeEventListener("loadedmetadata", update);
+      audio.removeEventListener("timeupdate", update);
     };
-  }, [audio, lines]);
+  }, [audio, lines, loopIndexRef]);
 
   return { activeIndex, activeLineRef };
 }
