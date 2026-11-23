@@ -4,6 +4,8 @@ import { QueryClient } from "@tanstack/react-query";
 export const songKeys = {
   all: ["songs"] as const,
   page: (level: string | undefined, page: number) => ["songs", "page", level ?? "all", page] as const,
+  /** The library's pages for one level (or all), loaded one after another. */
+  list: (level: string | undefined) => ["songs", "list", level ?? "all"] as const,
   detail: (slug: string) => ["songs", "detail", slug] as const,
 };
 
