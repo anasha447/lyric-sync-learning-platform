@@ -89,6 +89,15 @@ services:
       traefik.http.middlewares.api-ratelimit.ratelimit.burst: "40"
       traefik.http.services.backend.loadbalancer.server.port: "8080"
 
+  nlp:
+    # the image CI publishes; `docker compose --profile app build nlp` builds it locally instead
+    image: ghcr.io/anasha447/lyricsync-nlp:${NLP_TAG:-main}
+    build: ./nlp-service
+    profiles: [app]
+    # internal only: no Traefik route. Published on localhost for its /docs while developing.
+    ports:
+      - "127.0.0.1:${NLP_PORT:-8001}:8000"
+
 volumes:
   postgres_data:
   rabbitmq_data:

@@ -14,6 +14,7 @@ concurrency:
 
 env:
   BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/lyricsync-backend
+  NLP_IMAGE: ghcr.io/${{ github.repository_owner }}/lyricsync-nlp
 
 jobs:
   changes:
@@ -25,6 +26,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       web: ${{ steps.filter.outputs.web }}
+      nlp: ${{ steps.filter.outputs.nlp }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -33,6 +35,9 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+              - '.github/workflows/ci.yml'
+            nlp:
+              - 'nlp-service/**'
               - '.github/workflows/ci.yml'
             web:
               - 'web/**'
@@ -128,6 +133,104 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=backend
 
+  nlp:
+    name: NLP lint and tests
+    needs: changes
+    if: needs.changes.outputs.nlp == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: nlp-service
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.9'
+          enable-cache: true
+          cache-dependency-glob: nlp-service/uv.lock
+      - name: Install the locked packages (with the spaCy model from GitHub)
+        run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+
+  nlp-image:
+    name: NLP image
+    needs: [changes, nlp]
+    if: needs.changes.outputs.nlp == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    env:
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        if: env.PUBLISH == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        id: meta
+        with:
+          images: ${{ env.NLP_IMAGE }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=main,enable={{is_default_branch}}
+      - name: Build image (not pushed yet)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: nlp-service
+          load: true
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            lyricsync-nlp:scan
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=nlp
+          cache-to: type=gha,scope=nlp,mode=max
+      - name: The image starts and loads the model
+        run: |
+          docker run -d --name nlp-smoke -p 8000:8000 lyricsync-nlp:scan
+          for i in $(seq 1 30); do curl -fsS http://localhost:8000/health && exit 0; sleep 2; done
+          docker logs nlp-smoke; exit 1
+      - name: Block on critical vulnerabilities that have a fix
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: lyricsync-nlp:scan
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Full scan report for the Security tab
+        if: always() && env.PUBLISH == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: lyricsync-nlp:scan
+          format: sarif
+          output: trivy-nlp.sarif
+          skip-setup-trivy: true
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: always() && env.PUBLISH == 'true'
+        with:
+          sarif_file: trivy-nlp.sarif
+          category: trivy-nlp
+      - name: Push image
+        if: env.PUBLISH == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: nlp-service
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=nlp
+
   web:
     name: Web lint, types and tests
     needs: changes
@@ -176,7 +279,8 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/lyricsync-backend:e2e
           cache-from: type=gha,scope=backend
       - name: Start the compose stack
-        run: docker compose --profile app up -d --wait
+        # not nlp: nothing calls it until the ingestion pipeline (BE-4.4)
+        run: docker compose --profile app up -d --wait postgres rabbitmq traefik backend
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
@@ -239,13 +343,13 @@ jobs:
 
   ci-result:
     name: CI result
-    needs: [changes, backend, backend-image, web, web-e2e-backend, web-deploy]
+    needs: [changes, backend, backend-image, nlp, nlp-image, web, web-e2e-backend, web-deploy]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if a required job failed
         run: |
-          echo "changes: ${{ needs.changes.result }}, backend: ${{ needs.backend.result }}, image: ${{ needs.backend-image.result }}, web: ${{ needs.web.result }}, web-e2e-backend: ${{ needs.web-e2e-backend.result }}, deploy: ${{ needs.web-deploy.result }}"
+          echo "changes: ${{ needs.changes.result }}, backend: ${{ needs.backend.result }}, image: ${{ needs.backend-image.result }}, nlp: ${{ needs.nlp.result }}, nlp-image: ${{ needs.nlp-image.result }}, web: ${{ needs.web.result }}, web-e2e-backend: ${{ needs.web-e2e-backend.result }}, deploy: ${{ needs.web-deploy.result }}"
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             exit 1
           fi

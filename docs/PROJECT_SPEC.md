@@ -324,7 +324,7 @@ No Redis while there's a single backend instance; no Hibernate second-level cach
 | Server | Hetzner CX33 (4 vCPU, 8 GB) | ~€8.50/month |
 | Domain | .com / .dev via Cloudflare | ~€10–15/year |
 
-The web app is self-hosted on the VPS (Vercel's hobby tier does not allow commercial use).
+The web app runs on Cloudflare Workers' free plan ([ADR-0012](adr/0012-web-on-cloudflare-workers.md)); Vercel's hobby tier does not allow commercial use.
 
 ---
 

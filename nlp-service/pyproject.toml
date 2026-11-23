@@ -1,0 +1,38 @@
+[project]
+name = "lyricsync-nlp"
+version = "0.1.0"
+description = "Analyses German lyric lines with spaCy: tokens, lemmas and parts of speech."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "de-core-news-md",
+    "fastapi>=0.165,<0.166",
+    "spacy>=3.8,<3.9",
+    "uvicorn>=0.38",
+]
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "nlp"
+
+[tool.uv.sources]
+de-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/de_core_news_md-3.8.0/de_core_news_md-3.8.0-py3-none-any.whl" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
