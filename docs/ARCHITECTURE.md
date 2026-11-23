@@ -34,16 +34,18 @@ Learners never cause a call to DeepL or kaikki.org; those run only during ingest
 ```mermaid
 flowchart TB
     browser([Browser])
+    edge[Cloudflare edge<br/>one origin]
     traefik[Traefik<br/>TLS, routing, rate limits]
-    web[web<br/>Next.js]
+    web[web<br/>Next.js on Workers]
     backend[backend<br/>Spring Boot + Modulith]
     identity[identity-service<br/>Spring Boot]
     nlp[nlp-service<br/>FastAPI + spaCy]
     pg[(PostgreSQL<br/>schema per module)]
     mq{{RabbitMQ}}
 
-    browser --> traefik
-    traefik -->|/| web
+    browser --> edge
+    edge -->|/*| web
+    edge -->|/api/*| traefik
     traefik -->|/api/auth/*| identity
     traefik -->|/api/*| backend
     backend -->|verifies JWT via JWKS| identity
@@ -56,7 +58,7 @@ flowchart TB
 
 | App | Owns | Talks to |
 |---|---|---|
-| `web` | All UI, guest data in the browser | backend and identity through Traefik |
+| `web` | All UI, guest data in the browser; runs on Cloudflare Workers ([ADR-0012](adr/0012-web-on-cloudflare-workers.md)) | backend and identity through the same origin (`/api/*`) |
 | `backend` | catalog, dictionary and learning modules | Postgres, RabbitMQ, R2, DeepL |
 | `identity-service` | Accounts, passwords, tokens, verification mails | Postgres, RabbitMQ, Resend |
 | `nlp-service` | Tokens, lemmas, morphology, separable verbs | RabbitMQ only (stateless) |
@@ -190,7 +192,7 @@ flowchart LR
     gh[GitHub Actions] -->|build, test, push| ghcr[(GHCR)]
     gh -->|ssh: compose pull + up| vps
     subgraph vps [Hetzner CX33 · Docker Compose]
-        traefik[Traefik + Let's Encrypt] --> web & backend & identity
+        traefik[Traefik + Let's Encrypt] --> backend & identity
         backend & identity --> pg[(Postgres)]
         backend & identity & nlp --> mq{{RabbitMQ}}
         alloy[Grafana Alloy]
@@ -198,6 +200,7 @@ flowchart LR
     end
     ghcr --> vps
     alloy --> grafana[Grafana Cloud]
+    gh -->|vinext-cloudflare deploy| workers[Cloudflare Workers · web]
     backup --> r2[(R2)]
 ```
 

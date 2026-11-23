@@ -5,7 +5,7 @@
 web
 
 ## Stack
-Next.js API on vinext, deployed to Cloudflare Workers (ADR-0012, written in FE-3.3); TypeScript, Tailwind, shadcn/ui, TanStack Query, Motion. The backend (Spring Modulith, identity-service, nlp-service) runs on a VPS behind Cloudflare; app and API share one origin.
+Next.js API on vinext, deployed to Cloudflare Workers (ADR-0012); TypeScript, Tailwind, shadcn/ui, TanStack Query, Motion. The backend (Spring Modulith, identity-service, nlp-service) runs on a VPS behind Cloudflare; app and API share one origin.
 
 ## Users
 English speakers learning German at levels A1 to B2, who would rather learn from music than from drills. They listen on a phone on the way somewhere or at a desk with headphones, in short sessions of 5 to 20 minutes. Many arrive with a concrete reason: moving to or living in a German-speaking country, work, studies, or a love of the music and culture.
