@@ -80,7 +80,16 @@ test("phone: the mini player shows the timeline, and tapping it seeks", async ({
   await expect(slider).toBeVisible();
   const box = (await slider.boundingBox())!;
   expect(box.height).toBeGreaterThanOrEqual(44);
-  await page.touchscreen.tap(box.x + box.width * 0.75, box.y + box.height - 6);
+
+  // the strip's touch area may reach into the gap above the tab bar, never into the tab bar
+  const tabBarTop = (await page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).boundingBox())!.y;
+  expect(box.y + box.height).toBeLessThanOrEqual(tabBarTop + 0.5);
+
+  // tap the middle of the strip, three quarters along; make sure that point really is the slider
+  const [x, y] = [box.x + box.width * 0.75, box.y + box.height / 2];
+  const hit = await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest("[role='slider']")?.getAttribute("aria-label"), [x, y]);
+  expect(hit).toBe("Song position");
+  await page.touchscreen.tap(x, y);
   await expect.poll(() => audioTime(page)).toBeCloseTo(4.5, 0);
 });
 
