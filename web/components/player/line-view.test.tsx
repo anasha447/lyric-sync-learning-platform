@@ -48,6 +48,27 @@ describe("LineView", () => {
     expect(screen.queryByText(line.translation!)).toBeNull();
   });
 
+  it("has a Play from button for keyboards and screen readers", () => {
+    const plays: boolean[] = [];
+    renderLine({ onPlay: (reveal) => plays.push(reveal) });
+    screen.getByRole("button", { name: "Play from: Am Brunnen vor dem Tore" }).click();
+    expect(plays).toEqual([false]);
+  });
+
+  it("a mouse click on the words is kept for the word card; the translation plays from the line", () => {
+    const plays: boolean[] = [];
+    renderLine({ onPlay: (reveal) => plays.push(reveal) });
+    screen.getByText(line.text).click();
+    expect(plays).toEqual([]);
+    screen.getByText(line.translation!).click();
+    expect(plays).toEqual([false]);
+  });
+
+  it("without a way to play, a line has no Play from button", () => {
+    renderLine({});
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
   it("an instrumental line shows a note, not text", () => {
     renderLine({ line: { ...line, instrumental: true, text: "", translation: null } });
     expect(screen.getByLabelText("Instrumental")).toHaveTextContent("♪");

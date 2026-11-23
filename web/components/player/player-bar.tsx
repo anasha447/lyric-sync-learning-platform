@@ -75,9 +75,15 @@ function MiniPlayer({ song, audio, controls, currentLine }: Props) {
 
   return (
     <>
+      {/*
+        76 px pill: the title on top (opens the sheet), the 56 px play button on the right, and the
+        wave timeline along the bottom edge (DESIGN.md → Components → Mini player). The strip's
+        44 px touch area reaches into the 8 px gap above the tab bar, never into the tab bar, and
+        sits above the title's lower edge; the play button sits above everything.
+      */}
       <section
         aria-label="Player"
-        className={`fixed inset-x-2 bottom-[calc(var(--height-tab-bar)+8px)] z-30 flex h-16 items-center gap-3 rounded-pill border pr-1 pl-5 ${blurredDusk}`}
+        className={`fixed inset-x-2 bottom-[calc(var(--height-tab-bar)+8px)] z-30 h-(--height-mini-player) rounded-pill border ${blurredDusk}`}
       >
         <button
           ref={openerRef}
@@ -85,12 +91,23 @@ function MiniPlayer({ song, audio, controls, currentLine }: Props) {
           aria-expanded={open}
           aria-haspopup="dialog"
           onClick={() => setOpen(true)}
-          className="flex min-h-11 min-w-0 flex-1 items-center text-left"
+          className="absolute top-0 right-[72px] left-0 z-10 flex h-12 items-center rounded-l-pill pt-2 pl-6 text-left"
         >
           <span className="sr-only">Open the player: </span>
           <SongTitle song={song} />
         </button>
-        <PlayButton playing={controls.playing} onToggle={controls.toggle} size="mini" />
+        <div className="absolute right-[76px] -bottom-2 left-6 z-20">
+          <WaveTimeline
+            audio={audio}
+            duration={controls.duration}
+            playing={controls.playing}
+            onSeek={controls.seekTo}
+            size="mini"
+          />
+        </div>
+        <div className="absolute top-1/2 right-2 z-30 -translate-y-1/2">
+          <PlayButton playing={controls.playing} onToggle={controls.toggle} size="mini" />
+        </div>
       </section>
 
       <AnimatePresence>

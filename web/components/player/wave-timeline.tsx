@@ -30,8 +30,10 @@ export function WaveTimeline({
   duration: number;
   playing: boolean;
   onSeek: (seconds: number) => void;
-  size?: "bar" | "sheet";
+  /** "mini": the phone mini player's strip, without times; its 44 px touch area overlaps the row above. */
+  size?: "bar" | "sheet" | "mini";
 }) {
+  const showTimes = size !== "mini";
   const reduceMotion = useReducedMotion() ?? false;
   const trackRef = useRef<HTMLDivElement>(null);
   const playedRef = useRef<SVGPathElement>(null);
@@ -124,9 +126,11 @@ export function WaveTimeline({
 
   return (
     <div className="flex w-full min-w-0 items-center gap-3">
-      <span ref={elapsedRef} className="w-10 shrink-0 text-right font-mono text-mono text-ink">
-        0:00
-      </span>
+      {showTimes && (
+        <span ref={elapsedRef} className="w-10 shrink-0 text-right font-mono text-mono text-ink">
+          0:00
+        </span>
+      )}
       <div
         ref={trackRef}
         role="slider"
@@ -148,7 +152,7 @@ export function WaveTimeline({
         onKeyDown={onKeyDown}
         className={cn(
           "group relative flex min-w-0 flex-1 cursor-pointer touch-none items-center rounded-sm",
-          size === "sheet" ? "h-11" : "h-8",
+          size === "bar" ? "h-8" : "h-11",
         )}
       >
         <svg width="100%" height={DRAW_HEIGHT} className="overflow-visible" aria-hidden>
@@ -161,7 +165,7 @@ export function WaveTimeline({
           className="pointer-events-none absolute top-1/2 left-0 -mt-1.5 -ml-1.5 size-3 rounded-pill bg-ink opacity-0 transition-opacity duration-(--duration-instant) group-hover:opacity-100 group-focus-visible:opacity-100 group-data-dragging:opacity-100"
         />
       </div>
-      <span className="w-10 shrink-0 font-mono text-mono text-ink-muted">{formatTime(duration)}</span>
+      {showTimes && <span className="w-10 shrink-0 font-mono text-mono text-ink-muted">{formatTime(duration)}</span>}
     </div>
   );
 }

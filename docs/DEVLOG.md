@@ -1,5 +1,19 @@
 # Development Log
 
+## 2026-11-23 — FE-3.7: Mini player timeline and play from a line
+
+- Phone mini player grows to 76 px with the wave timeline along its bottom edge (no times); its 44 px touch area reaches into the gap above the tab bar, the play button sits on top
+- Playing from a line: exact start, plays if paused, the loop moves to that line, auto-scroll follows again. The loop ref is set immediately, so the per-frame loop check never bounces back to the old line
+- `lineClickPlays`, tested: a touch plays from anywhere on a line; a mouse only from the empty space and the translation, since a click on a word is kept for the word card (FE-4.8)
+- ▶ "Play from: …" in a fixed left column: on PC on hover, focus and the active line, faint plum hover background; on phones only for screen readers
+- Translations off: a tap on a line's words shows that line's translation until the song moves on
+- Phone Playwright project now has touch, so tests really tap; 7 new browser tests (jump by keyboard, phone tap, PC word vs. translation vs. ▶, loop follows, scrolling doesn't seek, mini timeline seeks, translation reveal)
+- Two older tests clicked before hydration finished under load; they now wait for loaded content, and assertions wait up to 10 s
+
+**Branch:** `feature/FE-3.7-mini-timeline-line-play`
+
+---
+
 ## 2026-11-23 — DOC-3.8: Player interactions and the guest lookup limit
 
 - From using the player on a phone: the timeline was only in the sheet, and a learner couldn't jump to a line to hear it again. Decided in a design interview (5 rounds)
