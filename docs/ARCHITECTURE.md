@@ -212,7 +212,7 @@ flowchart LR
 /
 ├── backend/            Spring Boot + Modulith
 ├── identity-service/   (Sprint 5)
-├── nlp-service/        (Sprint 4)
+├── nlp-service/        FastAPI + spaCy
 ├── web/                (Sprint 3)
 ├── docs/               spec, architecture, ADRs, devlog
 ├── compose.yaml        local stack (OPS-2.4)
