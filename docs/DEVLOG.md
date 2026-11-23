@@ -1,5 +1,19 @@
 # Development Log
 
+## 2026-11-23 — FE-3.6: Songs list and the first end-to-end test against the backend
+
+- Library: level tabs (All, A1–B2; arrow keys), a 2/3/4/5-column grid of song cards (cover, title, level badge, no artist), staggered fade-in, "Show more songs", skeleton, empty state per level, "Try again" on errors; `/songs` redirects to the Library
+- Generated artwork, tested: the slug's hash picks two palette colours, an angle and one of six shapes, drawn as SVG on night. Every song uses it until covers can be uploaded (Sprint 6)
+- Song header: 280 px cover beside the title on desktop; on phones a large cover that shrinks and fades into a compact header with a 40 px thumbnail as you scroll; the ambient glow in the artwork's main colour behind it
+- Bug from FE-3.3 found: Vite's `/api` proxy never worked, because the Cloudflare plugin answers every request in the Worker first. A small `edge-routing` Vite plugin registered before it now forwards `/api` and `/media` in dev and preview, like the edge does in production
+- `e2e/seed.mjs`: generates a silent MP3 (frame headers plus zeros), ingests it through the real admin API, publishes it in SQL (no publish endpoint until Sprint 6) and restarts the backend, because the SQL skips the event that clears its caches
+- `e2e/backend.spec.ts`: Library → song → lyrics light up, against the compose stack with no mocks; CI runs it in a new job that builds the backend image from the PR
+- Playwright uses 2 workers: with 4 next to the compose stack, pages hydrated too slowly for the tests' timeouts
+
+**Branch:** `feature/FE-3.6-songs-list`
+
+---
+
 ## 2026-11-23 — FE-3.5: Player controls
 
 - Logic first, tested: time formatting, spoken time for screen readers, keyboard seeking (±5 s, Home/End), speeds 1 / 0.85 / 0.75, the loop rule, and the sine-wave path
