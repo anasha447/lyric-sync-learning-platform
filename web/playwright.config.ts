@@ -20,9 +20,13 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: {
-    command: `npm run dev -- --port ${port} --strictPort`,
+    // CI tests the built Worker (production-like, nothing compiled on the fly); locally the dev server.
+    command: process.env.CI || process.env.E2E_TARGET === "preview"
+      ? `npm run start -- --port ${port} --strictPort`
+      : `npm run dev -- --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
+    // a running dev server must not stand in for the preview
+    reuseExistingServer: !process.env.CI && process.env.E2E_TARGET !== "preview",
     timeout: 120_000,
   },
 });
