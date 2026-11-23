@@ -1,5 +1,22 @@
 # Development Log
 
+## 2026-11-23 — FE-3.3: Next.js on Workers scaffold
+
+- `web/` created with `create-vinext-app` for Cloudflare Workers (Worker `lyricsync-web`), all caches and image optimisation off; every package pinned
+- Current vinext configures Workers in `cloudflare.config.ts` and deploys with `vinext-cloudflare deploy`, not `wrangler.jsonc`; recorded in ADR-0012
+- DESIGN.md tokens in Tailwind v4 `@theme` (Tailwind's default palette removed); a test checks each colour, radius and spacing step against the DESIGN.md frontmatter
+- Fonts self-hosted with `@fontsource-variable` (vinext's `next/font` would load from Google, against ADR-0010)
+- App shell: sidebar 264 px, collapsed 72 px on tablets, tab bar on phones, page fade-and-rise, skip link, 404
+- TanStack Query: published songs never go stale in a session (ADR-0011)
+- Tests: 36 Vitest, 10 Playwright (390 px and 1440 px: navigation, no sideways scroll, keyboard, 44 px targets, night background, 404)
+- CI: web job on `web/**` and DESIGN.md; deploy job from `main` waits for the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets
+- Local Node had to go to 26: Cloudflare's config loader needs 22.18+, `cf` 22.23+
+- The sample `/api/hello` route was removed: on our domain `/api` belongs to the backend
+
+**Branch:** `feature/FE-3.3-web-scaffold`
+
+---
+
 ## 2026-11-23 — DOC-3.7b: Design system fixes from the skill tests
 
 - Testing the local `lyricsync-design` skill (3 requests, with and without the skill) surfaced six gaps in DESIGN.md
