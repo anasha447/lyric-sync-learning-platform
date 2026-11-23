@@ -131,6 +131,11 @@ components:
     backgroundColor: "{colors.dusk}"
     textColor: "{colors.ink}"
     height: "88px"
+  mini-player:
+    backgroundColor: "{colors.dusk}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.pill}"
+    height: "76px"
   input:
     backgroundColor: "{colors.dusk}"
     textColor: "{colors.ink}"
@@ -234,7 +239,7 @@ All three are **self-hosted** (`@fontsource-variable`), never loaded from Google
 **Grid and spacing.** A 4 px base, using the steps 4, 8, 12, 16, 24, 32, 48, 64. Content is at most 1200 px wide, centred; reading text at most 65ch.
 
 **Breakpoints.**
-- **Phone** (< 768 px): one column, bottom tab bar (64 px), mini player above it (64 px) while a song plays, 16 px side margins.
+- **Phone** (< 768 px): one column, bottom tab bar (64 px), mini player above it (76 px, with the wave timeline) while a song plays, 16 px side margins.
 - **Tablet** (768–1023 px): collapsed sidebar (72 px, icons only), 24 px margins.
 - **Desktop** (≥ 1024 px): full sidebar (264 px), 32 px margins.
 
@@ -267,14 +272,15 @@ All three are **self-hosted** (`@fontsource-variable`), never loaded from Google
   - *Desktop:* a 280 px square cover on the left; title (Display), artist (Title, `ink-muted`) and the level badge on the right.
   - *Phone:* the cover nearly full width (calc(100% − 32px)), title and artist below. As the lyrics scroll, the cover shrinks smoothly into a 40 px thumbnail in a compact header.
 - **Behind everything:** the ambient glow (see Elevation).
-- **Lyrics:** centred, max 720 px wide. The active line is kept at about 40 % of the viewport height by smooth auto-scroll; manual scrolling pauses auto-scroll until **"Back to the song"** is pressed.
+- **Lyrics:** centred, max 720 px wide. The active line is kept at about 40 % of the viewport height by smooth auto-scroll; manual scrolling pauses auto-scroll until **"Back to the song"** is pressed. Scrolling never changes the song's time.
+- **Playing from a line:** jumps to the line's exact start time and plays; with Loop on, the loop moves to that line; auto-scroll follows again. How a learner starts it: see Components → Lyric line.
 - **Translation:** under each line, toggled in the player bar.
 - **Player bar** (desktop and tablet):
   - small cover (48 px), title
   - the play button in the centre
   - the wave timeline with times on both sides
   - loop line, speed (1 / 0.85 / 0.75), translation toggle
-- **Phone:** the controls sit in a sheet that expands from the mini player.
+- **Phone:** the mini player (see Components) shows the title, the play button and the wave timeline; the other controls sit in a sheet that expands from it.
 
 **Onboarding.** Full screen on `night`, no shell. One question centred (Display), options below, progress dots at the top, Back on the left, Skip on the right where allowed.
 
@@ -346,7 +352,7 @@ Motion is part of lyricsync's identity: smooth, unhurried, never bouncy, always 
 - **Song cards:**
   - hover lifts the cover 4 px and its border becomes `hairline-strong`, over `duration-instant`
   - the cover zooms 1.03 inside its frame
-- **Word card:** pops from the tapped word (scale 0.96 → 1, fade) with `spring-soft`; on phones the bottom sheet slides up over `duration-slow`.
+- **Word card:** pops from the looked-up word (scale 0.96 → 1, fade) with `spring-soft`; on phones the bottom sheet slides up over `duration-slow`.
 - **Onboarding:**
   - steps slide sideways: the next step enters from 24 px right, the previous one leaves 24 px left
   - the selected option card fills violet and shows its check with `spring-soft`
@@ -386,6 +392,11 @@ Full width of the player bar's centre column, 32 px tall hit area (44 px on phon
 - **Keyboard:** ←/→ seek ±5 s, Home/End jump to start/end.
 - **Screen readers:** `role="slider"` with `aria-valuetext="1 minute 24 seconds of 3 minutes 5 seconds"`.
 
+### Mini player (phones)
+A `dusk` pill (blurred, see Elevation), 76 px high, 8 px above the tab bar while a song is loaded.
+- **Top:** title and artist (tap to open the sheet with all controls) and the 56 px play button.
+- **Bottom edge:** the wave timeline across the full width, without times. Its touch area is 44 px tall, so a tap or drag on the lower part seeks; the times appear in the sheet.
+
 ### Song card
 - **Layout:** a square cover on top (12 px radius), then the title (Title, up to 2 lines) and the **level badge**.
 - **Excluded on purpose:** **no artist name**; the artist appears on the song page.
@@ -405,7 +416,19 @@ A noun in the lyrics is a button (like every word) whose text takes its gender c
 A **legend** in the song page header ("der m · die f · das n") explains it and links to Settings, where the colours can be switched off. The markers stay either way. Plurals use their singular's gender.
 
 ### Lyric line
-Each word is a `<button>` (tap, click, Enter/Space): no visible button styling, a 2 px `violet` focus ring and a faint `plum` hover background. Separable verb partners highlight together when either is tapped. The translation sits below each line in `teal-light` (Translation style).
+The translation sits below each line in `teal-light` (Translation style). A line has two jobs: moving the song to it (time) and explaining its words (meaning). Each device gets its most natural gesture for each:
+
+| | Play from the line | Look up a word (word card) |
+|---|---|---|
+| **Phone** | tap anywhere on the line, words included | press and hold a word (500 ms) |
+| **PC** | click ▶, the translation, or the line's empty space | click the word |
+| **Keyboard, screen readers** | the line's "Play from: …" button | activate the word's button (Enter/Space) |
+
+- **▶ (PC):** a small play icon in a fixed column at the left edge of the lyrics, so the centred text doesn't move; 44 × 44 px, `ink-muted`, brighter on hover. Shown on hover, on keyboard focus and always on the active line. Never `karaoke` (the Sound rule). On phones it exists only for screen readers.
+- **Line hover (PC):** a faint `plum` background behind the line.
+- **Words:** each word is a `<button>`: no visible button styling, a 2 px `violet` focus ring and a faint `plum` hover background. Separable verb partners highlight together when either is looked up.
+- **Press and hold (phone):** while held, the word gets a faint `plum` highlight; moving the finger cancels (so scrolling still works). The phone's own text-selection and copy menu is off on lyrics.
+- **Translations off:** jumping to a line by tapping one of its words shows that line's translation until the next line starts.
 
 ### Word card
 - **Shape:** `plum`, 16 px radius, max 360 px wide; a popover on desktop, a bottom sheet on phones.
@@ -415,8 +438,16 @@ Each word is a `<button>` (tap, click, Enter/Space): no visible button styling, 
   - word type
   - 1–3 meanings
   - **Save to review** (primary) and **Replay line** (secondary)
-- **Behaviour:** opening pauses the audio.
+- **Behaviour:** opening pauses the audio. **Replay line** plays the line once, then pauses (unlike playing from a line, which keeps playing).
 - **When saved:** the save icon turns `teal` and a toast confirms ("Saved: das Herz").
+- **A guest past the guest lookup limit** (see PRODUCT.md): the card still opens, with the word as sung and *"You've used today's 5 free words. Sign up to look up as many as you like."* → **Sign up** and **I already have an account**. After either, the card reopens with the meanings.
+
+### Sign-up prompt (guests)
+A small dialog (`plum`, 24 px radius on phones as a sheet, centred on desktop) when a guest does something that needs an account, such as **Save to review**:
+- one line: *"Sign up to save words and review them later."*
+- **Sign up** (primary) and **I already have an account** (secondary, to Log in)
+- either way, the learner comes back to the same song and line, and the action they started (the save) completes on its own
+- closing it changes nothing; the song stays where it was
 
 ### Option card (onboarding)
 `plum`, 16 px radius, 20 px padding, Title text plus a short description in `ink-muted`.
@@ -445,14 +476,16 @@ Bottom of the sidebar or on Profile:
 
 ### Toasts
 Bottom-centre, above the player. `plum`, 12 px radius, an icon plus one line. Enter with `spring-soft`, leave after 3 s with a fade. Never for errors that need action.
+- **Hint** (a variant): the same look, shown for 7 s (no countdown), dismissed early by a tap. Each hint is shown until the person has dismissed it or done what it teaches, then never again: a guest's browser remembers it, and a learner's account does, on every device.
+- **The press-and-hold hint** (touch devices): *"Press and hold a word to see what it means."*, when a song opens.
 
 ### Skeletons
 Shapes of the real content (cover squares, two text lines) in `plum` at 60 % with the shimmer. Never spinners for page loads.
 
 ### Empty and error states
 One calm line plus one action, centred, with a soft generated-art graphic.
-- **Vocabulary empty:** *"Tap any word in a song to save it."* → **Browse songs**
-- **Vocabulary for a guest:** *"Sign up to keep the words you tap."* → **Sign up to save words**
+- **Vocabulary empty:** *"Look up a word in any song to save it."* → **Browse songs**
+- **Vocabulary for a guest:** *"Sign up to keep the words you look up."* → **Sign up to save words**
 - **Review empty:** *"Nothing due. Come back tomorrow, or play a song."* → **Play a song**
 - **Error:** *"We couldn't load this song."* → **Try again**, only for failures a retry can fix (network, server). Never a raw error code.
 - **A song that doesn't exist or isn't published (404):** the 404 page, not "Try again".
