@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import "./theme.css";
+
+/* Dark only, and `night` from the very first paint (DESIGN.md → Overview). */
+:root {
+  color-scheme: dark;
+  background: var(--color-night);
+  color: var(--color-ink);
+}
+
+body {
+  margin: 0;
+  background: var(--color-night);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 2 px violet focus ring with a 2 px offset, following the element's radius. */
+:focus-visible {
+  outline: 2px solid var(--color-violet);
+  outline-offset: 2px;
+}
+
+/* The Steady Numbers rule: changing numbers never jump. */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced motion: short crossfades only, and nothing loops. Motion components follow MotionConfig. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: var(--duration-instant) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--duration-instant) !important;
+    scroll-behavior: auto !important;
+  }
+}
