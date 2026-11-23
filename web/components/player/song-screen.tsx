@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import NotFound from "@/app/not-found";
-import { LevelBadge } from "@/components/level-badge";
+import { SongHeader } from "@/components/songs/song-header";
 import { isNotFound } from "@/lib/api";
 import { songQuery } from "@/lib/songs";
 import { LyricsPlayer } from "./lyrics-player";
@@ -30,15 +30,8 @@ export function SongScreen({ slug }: { slug: string }) {
   }
 
   return (
-    <article className="flex flex-col gap-8">
-      {/* The full header (cover, ambient glow) comes with FE-3.6. */}
-      <header className="flex flex-col items-center gap-2 text-center">
-        <h1 lang="de" className="font-display text-display text-ink">
-          {song.title}
-        </h1>
-        <p className="font-display text-title text-ink-muted">{song.artist}</p>
-        <LevelBadge level={song.level} />
-      </header>
+    <article className="flex flex-col gap-12">
+      <SongHeader song={song} />
       <LyricsPlayer song={song} />
     </article>
   );
