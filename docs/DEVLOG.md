@@ -1,5 +1,18 @@
 # Development Log
 
+## 2026-11-23 — NLP-4.1: nlp-service scaffold
+
+- `nlp-service/`: FastAPI + spaCy `de_core_news_md` 3.8.0; `POST /analyze` (lines → word tokens with lemma and part of speech) and `GET /health`; the model loads once at startup
+- Managed with uv (`uv.lock`) and linted with Ruff; the model comes from spaCy's GitHub release, pinned by URL and hash, because spaCy's models aren't published on PyPI
+- 10 tests against the real model; breaking the punctuation filter and the line limit on purpose makes them fail
+- Dockerfile (multi-stage, non-root, healthcheck); compose service in the `app` profile with no Traefik route, on 127.0.0.1:8001 for its docs
+- CI: lint, format and tests; image build, start-up check, Trivy scan, push to GHCR from `main`. The backend end-to-end job starts only the services it needs, since nothing calls nlp until BE-4.4
+- PROJECT_SPEC: the cost section still said the web app is self-hosted on the VPS; it runs on Workers (ADR-0012)
+
+**Branch:** `feature/NLP-4.1-nlp-service-scaffold`
+
+---
+
 ## 2026-11-23 — FE-3.7: Mini player timeline and play from a line
 
 - Phone mini player grows to 76 px with the wave timeline along its bottom edge (no times); its 44 px touch area reaches into the gap above the tab bar, the play button sits on top
