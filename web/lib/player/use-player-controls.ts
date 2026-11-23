@@ -65,10 +65,30 @@ export function usePlayerControls(audio: HTMLAudioElement | null, lines: readonl
 
   const toggleTranslations = useCallback(() => setShowTranslations((s) => !s), []);
 
+  /**
+   * Plays from a line's exact start (DESIGN.md → Song page → Playing from a line). With Loop
+   * on, the loop moves to that line. The ref is set at once: the per-frame loop check must
+   * not see the old looped line, or jumping past its end would bounce back to it.
+   */
+  const playFromLine = useCallback(
+    (lineIndex: number) => {
+      const line = lines[lineIndex];
+      if (!audio || !line) return;
+      if (loopIndexRef.current !== null) {
+        loopIndexRef.current = lineIndex;
+        setLoopIndex(lineIndex);
+      }
+      seekAudio(audio, line.startMs / 1000);
+      if (audio.paused) void audio.play();
+    },
+    [audio, lines],
+  );
+
   return {
     playing,
     toggle,
     seekTo,
+    playFromLine,
     duration,
     speed,
     cycleSpeed,

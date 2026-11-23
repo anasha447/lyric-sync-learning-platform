@@ -67,5 +67,8 @@ export function useAutoScroll(activeIndex: number, activeLineRef: RefObject<HTML
     scrollToActive(true);
   }, [scrollToActive]);
 
-  return { following, backToSong };
+  /** The learner chose a line: follow the song again from there (it scrolls on the next line change). */
+  const follow = useCallback(() => setFollowing(true), []);
+
+  return { following, backToSong, follow };
 }
