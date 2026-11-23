@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-23 — FE-3.4: Synced lyrics player
+
+- `findLineAt`: binary search for the line being sung, test-first; a line covers [start, end), gaps and the time after the last line have no active line
+- `useLineSync` reads `currentTime` on every animation frame while playing and writes the line's progress into a CSS variable, so React re-renders only when the line changes
+- The singing line: Lyric → Lyric Active and muted → ink over `duration-standard`; the karaoke underline is a background on the inline text, so on wrapped lines it fills row after row
+- Auto-scroll keeps the active line at 40 % of the viewport (Motion, `duration-slow`, ease-out; a jump with reduced motion); wheel, touch or scroll keys hand control to the learner, "Back to the song" takes it back
+- Song page `/songs/[slug]`, fetched in the browser; skeleton while loading, 404 page for a missing song, "Try again" only for failures a retry can fix
+- Component names follow GLOSSARY.md (`Line`, `LineView`) rather than the issue's `LyricLine`
+- Browser tests play a generated silent WAV against a mocked API; CI runs them against the built Worker (`vite preview`), since dev-mode first compiles reload the page
+- Flaky-test lesson: the audio may start seconds after the click while loading, so the test waits for `currentTime > 0` before timing lines
+
+**Branch:** `feature/FE-3.4-synced-lyrics-player`
+
+---
+
 ## 2026-11-23 — FE-3.3: Next.js on Workers scaffold
 
 - `web/` created with `create-vinext-app` for Cloudflare Workers (Worker `lyricsync-web`), all caches and image optimisation off; every package pinned
