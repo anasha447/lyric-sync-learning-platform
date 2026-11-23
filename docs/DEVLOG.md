@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-23 — DOC-3.8: Player interactions and the guest lookup limit
+
+- From using the player on a phone: the timeline was only in the sheet, and a learner couldn't jump to a line to hear it again. Decided in a design interview (5 rounds)
+- Mini player: 76 px with the wave timeline along its bottom edge, seekable (44 px touch area)
+- Playing from a line jumps to its exact start and plays; the loop follows; auto-scroll resumes. Scrolling never changes the time
+- One table in DESIGN.md → Lyric line: phone tap = play from the line, press and hold (500 ms) = word card; PC ▶ / translation / empty space = play, click a word = card; buttons for keyboard and screen readers
+- Hint toast variant (7 s, shown until dismissed or used, remembered per person, across devices for learners): "Press and hold a word to see what it means."
+- Guest lookup limit: 5 word lookups a day, counted in the browser; line translations stay free. PRODUCT.md principle 5 changed accordingly; the sign-up prompt offers Sign up or Log in, and the started action completes after either
+- GLOSSARY.md: Word lookup, Guest lookup limit. "Tap a word" wording replaced with "look up", since a tap on a phone now plays from the line
+- New ticket FE-3.7 (#57); FE-4.8, FE-5.6 and BE-5.3 (`hints_seen`) extended
+
+**Branch:** `docs/DOC-3.8-player-interactions`
+
+---
+
 ## 2026-11-23 — FE-3.6: Songs list and the first end-to-end test against the backend
 
 - Library: level tabs (All, A1–B2; arrow keys), a 2/3/4/5-column grid of song cards (cover, title, level badge, no artist), staggered fade-in, "Show more songs", skeleton, empty state per level, "Try again" on errors; `/songs` redirects to the Library

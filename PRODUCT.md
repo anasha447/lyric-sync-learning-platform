@@ -10,10 +10,10 @@ Next.js API on vinext, deployed to Cloudflare Workers (ADR-0012); TypeScript, Ta
 ## Users
 English speakers learning German at levels A1 to B2, who would rather learn from music than from drills. They listen on a phone on the way somewhere or at a desk with headphones, in short sessions of 5 to 20 minutes. Many arrive with a concrete reason: moving to or living in a German-speaking country, work, studies, or a love of the music and culture.
 
-A **guest** can listen and tap words without an account. A **learner** has an account and saves words for review. An **admin** adds and publishes songs.
+A **guest** can listen, read line translations and look up 5 words a day without an account. A **learner** has an account and saves words for review. An **admin** adds and publishes songs.
 
 ## Product Purpose
-lyricsync turns German songs into lessons: the lyrics light up line by line in time with the music, every word can be tapped for its meaning, base form and gender, and saved words come back in spaced-repetition reviews that replay the exact line they were heard in. Success is a learner who comes back daily, remembers words because they remember the song, and moves up a level.
+lyricsync turns German songs into lessons: the lyrics light up line by line in time with the music, every word can be looked up for its meaning, base form and gender, and saved words come back in spaced-repetition reviews that replay the exact line they were heard in. Success is a learner who comes back daily, remembers words because they remember the song, and moves up a level.
 
 ## Positioning
 The review replays the learner's own moment: the same song, the same line, the same voice. Vocabulary apps show a word on a card; lyricsync brings back the bar of music it was learned in. The whole product is built around listening first, not around a course.
@@ -27,12 +27,13 @@ The review replays the learner's own moment: the same song, the same line, the s
 
   Answers live in the browser until sign-up, then move to the learner. All of them can be changed in Settings.
 - **Home:** a welcome line using the display name, continue listening, reviews due, songs for the learner's level, recently added.
-- **A song:** play it, read along, loop a line, slow it down, tap words, save them.
+- **A song:** play it, read along, jump to a line, loop it, slow it down, look up words, save them.
 - **Review:** hear the line again, recall the word, grade it.
 - **Admin:** upload audio, `.lrc` lyrics, a cover and its note; check the sync; fix words; publish.
 
 ## Capabilities and Constraints
 - Levels are A1, A2, B1 and B2; nothing above B2 in v1.
+- **Guest lookup limit:** a guest gets 5 word lookups a day (reset at their local midnight, counted in their browser); line translations stay unlimited. It's a nudge to sign up, not a paywall: clearing the browser resets it, and guests are never tracked to enforce it.
 - The interface is in English; German appears only in the content (lyrics, words, examples).
 - Nouns show their gender (der, die, das) by colour **and** an `m`/`f`/`n` marker.
 - Songs are published only with a license that allows translation and commercial use (ADR-0008). Covers are uploaded by the admin (AI-generated art is fine) with an optional note; songs without a cover get generated artwork.
@@ -54,7 +55,7 @@ The review replays the learner's own moment: the same song, the same line, the s
 2. **Your own moment comes back.** Reviews replay the line a word was saved from.
 3. **Calm progress.** Encourage, never pressure; streaks and goals inform, they don't nag.
 4. **Honest content.** Only licensed songs, real data, no invented social proof.
-5. **Works without an account.** A guest gets the full listening experience; an account only adds saving and reviews.
+5. **Works without an account.** A guest gets the full listening experience with line translations, and 5 word lookups a day; an account adds unlimited lookups, saving and reviews.
 
 ## Accessibility & Inclusion
 WCAG 2.2 AA: text contrast at least 4.5:1, keyboard access to the player and every word, visible focus, never colour alone (gender markers), `prefers-reduced-motion` respected everywhere, captions are the product itself (lyrics with translation).

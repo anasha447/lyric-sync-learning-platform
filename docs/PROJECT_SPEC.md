@@ -11,7 +11,7 @@ Terms in *italics* are defined in [GLOSSARY.md](../GLOSSARY.md). Decisions behin
 A web platform where **English speakers learn German by listening to songs**.
 
 - *Lines* highlight in time with the audio (from `.lrc` timestamps).
-- Tapping a word opens its meaning, *lemma*, word type and *gender*.
+- Looking up a word (press and hold on a phone, click on a PC) opens its meaning, *lemma*, word type and *gender*.
 - *Saved words* come back in spaced-repetition *reviews* that replay the song line they were saved from.
 - Songs are grouped by *level*: A1, A2, B1, B2.
 
@@ -37,8 +37,8 @@ English (UI and translations) → German. The data model leaves room for more pa
 
 | # | Feature | Summary |
 |---|---------|---------|
-| F1 | **Synced lyrics player** | The current *line* highlights and auto-scrolls with the audio. |
-| F2 | **Tap a word → word card** | *Lemma* (`ging → gehen`), word type, article/*gender*, 1–3 English meanings. Tapping pauses the audio. |
+| F1 | **Synced lyrics player** | The current *line* highlights and auto-scrolls with the audio. A learner can play from any line (phone: tap the line; PC: ▶, the translation or the line's empty space). |
+| F2 | **Word lookup → word card** | *Lemma* (`ging → gehen`), word type, article/*gender*, 1–3 English meanings. Phone: press and hold a word; PC: click it. Opening the card pauses the audio. |
 | F3 | **der/die/das colours** | Nouns coloured by *gender*, each colour paired with a small `m`/`f`/`n` marker so colour is never the only signal. |
 | F4 | **Loop line + slow speed** | Loop the current line; speeds 1× / 0.85× / 0.75× with pitch preserved. |
 | F5 | **Separable verbs** | In "Ich **rufe** dich **an**", either part highlights its *partner token* and shows **anrufen**. |
@@ -47,7 +47,7 @@ English (UI and translations) → German. The data model leaves room for more pa
 | F8 | **Line translation on request** | Per line, or for the whole song. |
 | F9 | **Levels and onboarding** | Library tabs A1–B2. A four-step *onboarding* on the first visit asks for a *display name* (optional), the level, *learning reasons* and daily minutes. |
 | F10 | **Admin ingestion + review** | Upload audio + `.lrc`, preview the sync, the pipeline analyses the song, the admin fixes *unmatched* tokens and edits translations, then publishes. |
-| F11 | **Guest mode** | Play songs and tap words without an account. Sign-up is asked for only when saving a word. |
+| F11 | **Guest mode** | Play songs, read line translations and make 5 *word lookups* a day without an account (the *guest lookup limit*). Sign-up is asked for when saving a word or past the limit. |
 | F12 | **Streak + daily goal** | Daily review goal chosen as minutes per day (5/10/15/20 → 10/20/30/40 reviews; default 10) and a streak counter (section 5.3). |
 | F13 | **Privacy controls** | Self-service account deletion and JSON data export; Impressum and Datenschutzerklärung pages. |
 
@@ -74,8 +74,8 @@ English (UI and translations) → German. The data model leaves room for more pa
 ```
 Landing → "Start listening" → Onboarding (stored in the browser):
    name (optional) → level → why German (several, optional) → daily minutes (optional)
-→ Home: "Welcome, Anas" + songs for that level → play songs, tap words (no account needed)
-→ "Save to review" → Sign up (email + password, name prefilled) → email verification mail sent
+→ Home: "Welcome, Anas" + songs for that level → play songs, look up 5 words a day (no account needed)
+→ "Save to review", or a lookup past the limit → Sign up (email + password, name prefilled) or Log in → email verification mail sent
 → onboarding answers + completions are merged into the new learner → the pending save completes
 ```
 
@@ -83,7 +83,8 @@ Landing → "Start listening" → Onboarding (stored in the browser):
 ```
 Library → song card → Song page
   → Play: lines highlight in sync, view auto-scrolls
-  → Tap a word → audio pauses → word card
+  → Play from a line: phone tap / PC ▶ → jumps to the line's start and plays (with Loop on, the loop moves there)
+  → Look up a word (phone: press and hold; PC: click) → audio pauses → word card
        ├─ "Save to review"  → saved (toast "Saved: gehen", or "Saved — added this line")
        ├─ "Replay line"     → plays the current line once
        └─ close             → audio resumes (unless "stay paused" is on)
@@ -158,7 +159,7 @@ Look, feel and motion: [DESIGN.md](../DESIGN.md). Users, voice and onboarding: [
 Three colours that pass WCAG AA on the background, each with an `m`/`f`/`n` marker. Only nouns are coloured; plurals use their singular's gender. Legend in the player header; can be turned off in settings.
 
 ### 6.6 Guest data
-Onboarding answers (display name, level, learning reasons, daily goal), completions and a pending save live in `localStorage`. On sign-up the web app sends them once to the backend to merge, then clears them. Guests have no server-side data.
+Onboarding answers (display name, level, learning reasons, daily goal), completions, a pending save, the hints already seen and today's word lookup count live in `localStorage`. On sign-up the web app sends them once to the backend to merge, then clears them. Guests have no server-side data.
 
 ---
 
@@ -271,7 +272,7 @@ No Redis while there's a single backend instance; no Hibernate second-level cach
 - `dictionary_form` (form, entry_id, tags)
 
 **learning**
-- `learner` (account_id, display_name (optional, ≤ 30), cefr_level, learning_reasons (set of MOVING, WORK, STUDIES, CULTURE), daily_goal, timezone, settings, created_at)
+- `learner` (account_id, display_name (optional, ≤ 30), cefr_level, learning_reasons (set of MOVING, WORK, STUDIES, CULTURE), daily_goal, timezone, settings, hints_seen (set, e.g. PRESS_AND_HOLD), created_at)
 - `saved_word` (id, learner_id, dictionary_entry_id, created_at) — unique (learner_id, dictionary_entry_id)
 - `sighting` (id, saved_word_id, song_id, line_id, token_id, created_at) — unique (saved_word_id, line_id)
 - `review_state` (saved_word_id, due_at, stability, difficulty, state, reps, lapses, last_reviewed_at)
